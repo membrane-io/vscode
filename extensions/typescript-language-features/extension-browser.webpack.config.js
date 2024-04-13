@@ -55,7 +55,7 @@ export default [withBrowserDefaults({
 				}))
 			],
 		}),
-	],
+	], 
 }), withBrowserDefaults({
 	context: import.meta.dirname,
 	entry: {
