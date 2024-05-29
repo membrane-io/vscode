@@ -59,7 +59,6 @@ export class WorkerServerProcessFactory implements TsServerProcessFactory {
 }
 
 class WorkerServerProcess implements TsServerProcess {
-
 	private static idPool = 0;
 
 	private readonly id = WorkerServerProcess.idPool++;
@@ -156,7 +155,7 @@ class WorkerServerProcess implements TsServerProcess {
 
 	write(serverRequest: Proto.Request): void {
 		const { arguments: args } = serverRequest;
-		const transfer = args.configuration?.transfer;
+		const transfer = args?.configuration?.transfer;
 		const request = {
 			...serverRequest,
 			arguments: args,
