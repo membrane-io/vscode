@@ -109,12 +109,16 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 		mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 		target: 'webworker', // extensions run in a webworker context
 		resolve: {
+			alias: {
+				'./platform/vscode': path.resolve(__dirname, 'membrane-ts-plugin/src/platform/browser.ts'),
+			},
 			mainFields: ['browser', 'module', 'main'],
 			extensions: ['.ts', '.js'], // support ts-files and js-files
 			fallback: {
-				'path': require.resolve('path-browserify'),
 				'os': require.resolve('os-browserify'),
-				'util': require.resolve('util')
+				'events': require.resolve('events'),
+				'path': require.resolve('path-browserify'),
+				'util': require.resolve('util/')
 			},
 			extensionAlias: {
 				// this is needed to resolve dynamic imports that now require the .js extension
@@ -123,34 +127,34 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 		},
 		module: {
 			rules: [
-				{ 
+				{
 					test: /\.d\.ts$/,
 					type: 'asset/source'
 				},
 				{
-				test: /\.ts$/,
-				exclude: /node_modules|typings\/.*\.d\.ts$/, // Exclude node_modules and .d.ts files in the typings folder
-				use: [
-					{
-						// configure TypeScript loader:
-						// * enable sources maps for end-to-end source maps
-						loader: 'ts-loader',
-						options: {
-							...tsLoaderOptions,
-							//							...(additionalOptions ? {} : { configFile: additionalOptions.configFile }),
-						}
-					},
-					{
-						loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
-						options: {
-							configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
+					test: /\.ts$/,
+					exclude: /node_modules|typings\/.*\.d\.ts$/, // Exclude node_modules and .d.ts files in the typings folder
+					use: [
+						{
+							// configure TypeScript loader:
+							// * enable sources maps for end-to-end source maps
+							loader: 'ts-loader',
+							options: {
+								...tsLoaderOptions,
+								//							...(additionalOptions ? {} : { configFile: additionalOptions.configFile }),
+							}
 						},
-					},
-				]
-			}, {
-				test: /\.wasm$/,
-				type: 'asset/inline'
-			}]
+						{
+							loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
+							options: {
+								configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
+							},
+						},
+					]
+				}, {
+					test: /\.wasm$/,
+					type: 'asset/inline'
+				}]
 		},
 		externals: {
 			'vscode': 'commonjs vscode', // ignored because it doesn't exist,
