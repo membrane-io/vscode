@@ -117,6 +117,7 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 			fallback: {
 				'os': require.resolve('os-browserify'),
 				'events': require.resolve('events'),
+				// 'os': require.resolve('os-browserify'),
 				'path': require.resolve('path-browserify'),
 				'util': require.resolve('util/')
 			},
@@ -127,6 +128,7 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 		},
 		module: {
 			rules: [
+				// MEMBRANE: see ts-plugin/src/membraneLib.ts
 				{
 					test: /\.d\.ts$/,
 					type: 'asset/source'
@@ -141,11 +143,11 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 							loader: 'ts-loader',
 							options: {
 								...tsLoaderOptions,
-								//							...(additionalOptions ? {} : { configFile: additionalOptions.configFile }),
+								...(additionalOptions?.configFile ? { configFile: additionalOptions.configFile } : {}),
 							}
 						},
 						{
-							loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
+							loader: path.resolve(__dirname, 'mangle-loader.js'),
 							options: {
 								configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
 							},

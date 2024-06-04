@@ -50,8 +50,6 @@ export class WorkerServerProcessFactory implements TsServerProcessFactory {
 			...args,
 			// Explicitly give TS Server its path so it can load local resources
 			'--executingFilePath', tsServerPath,
-			// Enable/disable web type acquisition
-			(configuration.webTypeAcquisitionEnabled && supportsReadableByteStreams() ? '--experimentalTypeAcquisition' : '--disableAutomaticTypingAcquisition'),
 		];
 
 		return new WorkerServerProcess(kind, tsServerPath, this._extensionUri, launchArgs, tsServerLog, this._logger);
@@ -154,6 +152,8 @@ class WorkerServerProcess implements TsServerProcess {
 	}
 
 	write(serverRequest: Proto.Request): void {
+		// MEMBRANE: this function has been modified to allow transfering objects to tsserver running on a web worker.
+		// Specifically, the Membrane extension sends a MessagePort so that it can talk to our ts-plugin.
 		const { arguments: args } = serverRequest;
 		const transfer = args?.configuration?.transfer;
 		const request = {

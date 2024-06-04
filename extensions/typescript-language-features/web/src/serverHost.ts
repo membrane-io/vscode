@@ -88,6 +88,9 @@ function createServerHost(
 			this.clearTimeout(timeoutId);
 		},
 		importPlugin: async (root, moduleName) => {
+			if (moduleName !== 'membrane-ts-plugin') {
+				throw new Error('Only the Membrane TS plugin is supported');
+			}
 			const scriptPath = combinePaths(root, moduleName);
 			try {
 				// Dynamically import the script using the constructed path
