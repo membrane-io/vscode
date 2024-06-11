@@ -57,37 +57,28 @@ class SecretStorageProvider implements ISecretStorageProvider {
 	}
 
 	// Revive URIs in additionalBuiltinExtensions if present
-	if (Array.isArray(config.additionalBuiltinExtensions)) {
-		config = {
-			...config,
-			additionalBuiltinExtensions: config.additionalBuiltinExtensions.map((ext: unknown) => URI.revive(ext as UriComponents))
-		};
+	let additionalBuiltinExtensions = config.additionalBuiltinExtensions;
+	if (Array.isArray(additionalBuiltinExtensions)) {
+		additionalBuiltinExtensions = additionalBuiltinExtensions.map((ext: unknown) => URI.revive(ext as UriComponents));
 	}
 
-	let workspace: IWorkspace | undefined;
-	if (config.folderUri) {
-		workspace = { folderUri: URI.revive(config.folderUri) };
-	} else if (config.workspaceUri) {
-		workspace = { workspaceUri: URI.revive(config.workspaceUri) };
-	}
-
-	const domElement = mainWindow.document.body;
-
-	if (workspace) {
-		const workspaceProvider: IWorkspaceProvider = {
-			workspace,
+	// Create final config object with all properties (avoiding readonly mutation)
+	const finalConfig: IWorkbenchConstructionOptions = {
+		...config,
+		additionalBuiltinExtensions,
+		workspaceProvider: {
+			workspace: { workspaceUri: URI.parse('memfs:/membrane.code-workspace') },
+			trusted: true,
 			open: async (
-				workspaceToOpen: IWorkspace,
-				options?: { reuse?: boolean; payload?: object }
+				_workspace: IWorkspace,
+				_options?: { reuse?: boolean; payload?: Record<string, unknown> }
 			): Promise<boolean> => {
 				return true;
 			},
-			trusted: true,
-		};
-		(config as unknown as { workspaceProvider?: IWorkspaceProvider }).workspaceProvider = workspaceProvider;
-	}
+		},
+		secretStorageProvider: new SecretStorageProvider(),
+	};
 
-	(config as unknown as { secretStorageProvider?: ISecretStorageProvider }).secretStorageProvider = new SecretStorageProvider();
-
-	create(domElement, config as IWorkbenchConstructionOptions);
+	const domElement = mainWindow.document.body;
+	create(domElement, finalConfig);
 })();
