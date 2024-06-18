@@ -256,7 +256,8 @@ const viewContainerRegistry = Registry.as<IViewContainersRegistry>(Extensions.Vi
  */
 export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewContainer({
 	id: VIEWLET_ID,
-	title: localize2('explore', "Explorer"),
+	// MEMBRANE: Call it "File Explorer" so it doesn't get confused with our "Graph Explorer"
+	title: localize2('explore', "File Explorer"),
 	ctorDescriptor: new SyncDescriptor(ExplorerViewPaneContainer),
 	storageId: 'workbench.explorer.views.state',
 	icon: explorerViewIcon,
@@ -265,7 +266,7 @@ export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewC
 	order: 0,
 	openCommandActionDescriptor: {
 		id: VIEWLET_ID,
-		title: localize2('explore', "Explorer"),
+		title: localize2('explore', "File Explorer"),
 		mnemonicTitle: localize({ key: 'miViewExplorer', comment: ['&& denotes a mnemonic'] }, "&&Explorer"),
 		keybindings: { primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyE },
 		order: 0

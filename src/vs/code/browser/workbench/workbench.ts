@@ -8,7 +8,7 @@ import { URI, UriComponents } from '../../../base/common/uri.js';
 import {
 	IWorkbenchConstructionOptions,
 	IWorkspace,
-	IWorkspaceProvider,
+	// IWorkspaceProvider,
 } from '../../../workbench/browser/web.api.js';
 import { ISecretStorageProvider } from '../../../platform/secrets/common/secrets.js';
 import { mainWindow } from '../../../base/browser/window.js';
