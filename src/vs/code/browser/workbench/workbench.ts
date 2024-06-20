@@ -14,15 +14,37 @@ import { ISecretStorageProvider } from '../../../platform/secrets/common/secrets
 import { mainWindow } from '../../../base/browser/window.js';
 
 class SecretStorageProvider implements ISecretStorageProvider {
-	public type = 'persisted' as const;
+	public type: 'persisted';
+
+	constructor() {
+		this.type = 'persisted';
+	}
 
 	async get(key: string): Promise<string | undefined> {
+		let extensionKey;
 		try {
-			const secret = JSON.parse(key);
-			return localStorage.getItem(secret.key) ?? undefined;
-		} catch {
-			return undefined;
+			// Check if the key is for an extension
+			extensionKey = JSON.parse(key);
+		} catch (err) {
+			// Only keys for extensions are stored as JSON so this must not be an extension secret.
 		}
+		if (
+			extensionKey?.extensionId === 'membrane.membrane' &&
+			extensionKey?.key === 'membraneApiToken'
+		) {
+			// HACK: Find the first key that matches the pattern of auth0 React
+			const localStorageKey = Object.keys(localStorage).find((key) =>
+				key.includes('::default::openid')
+			);
+			if (localStorageKey) {
+				const json = localStorage.getItem(localStorageKey);
+				const value = JSON.parse(json!);
+				return value.body.access_token;
+			} else {
+				throw new Error('Failed to read Membrane API token');
+			}
+		}
+		return localStorage.getItem(key) ?? undefined;
 	}
 
 	async set(key: string, value: string): Promise<void> {
@@ -77,6 +99,13 @@ class SecretStorageProvider implements ISecretStorageProvider {
 			},
 		},
 		secretStorageProvider: new SecretStorageProvider(),
+		defaultLayout: {
+			force: true,
+			views: [
+				{ id: 'membrane.explorer' },
+				{ id: 'membrane.logs' },
+			]
+		},
 	};
 
 	const domElement = mainWindow.document.body;
