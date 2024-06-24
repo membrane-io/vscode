@@ -119,7 +119,7 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 				'./platform/vscode': path.resolve(__dirname, '../../ts-plugin/src/platform/browser.ts'),
 			},
 			mainFields: ['browser', 'module', 'main'],
-			extensions: ['.membrane.ts', '.membrane.js', '.ts', '.js'], // support ts-files and js-files
+			extensions: ['.ts', '.js'], // support ts-files and js-files
 			fallback: {
 				// 'os': require.resolve('os-browserify'),
 				'events': require.resolve('events/'),
