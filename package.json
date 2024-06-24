@@ -16,6 +16,7 @@
     "test-extension": "vscode-test",
     "preinstall": "node build/npm/preinstall.js",
     "postinstall": "node build/npm/postinstall.js",
+    "postcheckout": "node build/postcheckout.js",
     "compile": "node --max-old-space-size=4095 ./node_modules/gulp/bin/gulp.js compile",
     "watch": "npm-run-all -lp watch-client watch-extensions",
     "watchd": "deemon yarn watch",
