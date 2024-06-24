@@ -114,10 +114,12 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 		target: 'webworker', // extensions run in a webworker context
 		resolve: {
 			alias: {
+				// MEMBRANE: ts-plugin is bundled inside typescript-language-features since vscode web doesn't support the
+				// normal typescriptServerPlugins extension setting.
 				'./platform/vscode': path.resolve(__dirname, '../../ts-plugin/src/platform/browser.ts'),
 			},
 			mainFields: ['browser', 'module', 'main'],
-			extensions: ['.ts', '.js'], // support ts-files and js-files
+			extensions: ['.membrane.ts', '.membrane.js', '.ts', '.js'], // support ts-files and js-files
 			fallback: {
 				// 'os': require.resolve('os-browserify'),
 				'events': require.resolve('events/'),
