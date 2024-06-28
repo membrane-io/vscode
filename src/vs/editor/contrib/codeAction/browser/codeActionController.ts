@@ -36,9 +36,9 @@ import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 import { editorFindMatchHighlight, editorFindMatchHighlightBorder } from 'vs/platform/theme/common/colorRegistry';
 import { isHighContrast } from 'vs/platform/theme/common/theme';
 import { registerThemingParticipant } from 'vs/platform/theme/common/themeService';
-import { CodeActionAutoApply, CodeActionFilter, CodeActionItem, CodeActionSet, CodeActionTrigger, CodeActionTriggerSource } from '../common/types';
-import { CodeActionModel, CodeActionsState } from './codeActionModel';
-
+import { CodeActionAutoApply, CodeActionFilter, CodeActionItem, CodeActionKind, CodeActionSet, CodeActionTrigger, CodeActionTriggerSource } from 'vs/editor/contrib/codeAction/common/types';
+import { CodeActionModel, CodeActionsState } from 'vs/editor/contrib/codeAction/browser/codeActionModel';
+import { HierarchicalKind } from 'vs/base/common/hierarchicalKind';
 
 interface IActionShowOptions {
 	readonly includeDisabledActions?: boolean;
@@ -77,7 +77,7 @@ export class CodeActionController extends Disposable implements IEditorContribut
 		@ICommandService private readonly _commandService: ICommandService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IActionWidgetService private readonly _actionWidgetService: IActionWidgetService,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		super();
 
@@ -279,11 +279,11 @@ export class CodeActionController extends Disposable implements IEditorContribut
 
 		const delegate: IActionListDelegate<CodeActionItem> = {
 			onSelect: async (action: CodeActionItem, preview?: boolean) => {
-				this._applyCodeAction(action, /* retrigger */ true, !!preview, ApplyCodeActionReason.FromCodeActions);
-				this._actionWidgetService.hide();
+				this._applyCodeAction(action, /* retrigger */ true, !!preview, options.fromLightbulb ? ApplyCodeActionReason.FromAILightbulb : ApplyCodeActionReason.FromCodeActions);
+				this._actionWidgetService.hide(false);
 				currentDecorations.clear();
 			},
-			onHide: () => {
+			onHide: (didCancel?) => {
 				this._editor?.focus();
 				currentDecorations.clear();
 			},
@@ -291,7 +291,24 @@ export class CodeActionController extends Disposable implements IEditorContribut
 				if (token.isCancellationRequested) {
 					return;
 				}
-				return { canPreview: !!action.action.edit?.edits.length };
+
+				let canPreview = false;
+				const actionKind = action.action.kind;
+
+				if (actionKind) {
+					const hierarchicalKind = new HierarchicalKind(actionKind);
+					const refactorKinds = [
+						CodeActionKind.RefactorExtract,
+						CodeActionKind.RefactorInline,
+						CodeActionKind.RefactorRewrite,
+						CodeActionKind.RefactorMove,
+						CodeActionKind.Source
+					];
+
+					canPreview = refactorKinds.some(refactorKind => refactorKind.contains(hierarchicalKind));
+				}
+
+				return { canPreview: canPreview || !!action.action.edit?.edits.length };
 			},
 			onFocus: (action: CodeActionItem | undefined) => {
 				if (action && action.action) {
@@ -299,7 +316,10 @@ export class CodeActionController extends Disposable implements IEditorContribut
 					const diagnostics = action.action.diagnostics;
 					currentDecorations.clear();
 					if (ranges && ranges.length > 0) {
-						const decorations: IModelDeltaDecoration[] = ranges.map(range => ({ range, options: CodeActionController.DECORATION }));
+						// Handles case for `fix all` where there are multiple diagnostics.
+						const decorations: IModelDeltaDecoration[] = (diagnostics && diagnostics?.length > 1)
+							? diagnostics.map(diagnostic => ({ range: diagnostic, options: CodeActionController.DECORATION }))
+							: ranges.map(range => ({ range, options: CodeActionController.DECORATION }));
 						currentDecorations.set(decorations);
 					} else if (diagnostics && diagnostics.length > 0) {
 						const decorations: IModelDeltaDecoration[] = diagnostics.map(diagnostic => ({ range: diagnostic, options: CodeActionController.DECORATION }));

@@ -25,6 +25,8 @@ import { TitleBarSetting } from 'vs/platform/window/common/window';
 
 export class PartsSplash {
 
+	static readonly ID = 'workbench.contrib.partsSplash';
+
 	private static readonly _splashElementId = 'monaco-parts-splash';
 
 	private readonly _disposables = new DisposableStore();
@@ -108,8 +110,6 @@ export class PartsSplash {
 
 		// remove initial colors
 		const defaultStyles = mainWindow.document.head.getElementsByClassName('initialShellColors');
-		if (defaultStyles.length) {
-			mainWindow.document.head.removeChild(defaultStyles[0]);
-		}
+		defaultStyles[0]?.remove();
 	}
 }

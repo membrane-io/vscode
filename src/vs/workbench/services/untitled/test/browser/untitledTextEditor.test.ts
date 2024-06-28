@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as assert from 'assert';
+import assert from 'assert';
 import { URI } from 'vs/base/common/uri';
 import { join } from 'vs/base/common/path';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -110,6 +110,10 @@ suite('Untitled text editors', () => {
 		const dirtyUntypedInput = input2.toUntyped({ preserveViewState: 0 });
 		assert.strictEqual(dirtyUntypedInput.contents, 'foo bar');
 		assert.strictEqual(dirtyUntypedInput.resource, undefined);
+
+		const dirtyUntypedInputWithResource = input2.toUntyped({ preserveViewState: 0, preserveResource: true });
+		assert.strictEqual(dirtyUntypedInputWithResource.contents, 'foo bar');
+		assert.strictEqual(dirtyUntypedInputWithResource?.resource?.toString(), input2.resource.toString());
 
 		const dirtyUntypedInputWithoutContent = input2.toUntyped();
 		assert.strictEqual(dirtyUntypedInputWithoutContent.resource?.toString(), input2.resource.toString());

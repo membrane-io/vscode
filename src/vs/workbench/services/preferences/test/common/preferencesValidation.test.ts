@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as assert from 'assert';
+import assert from 'assert';
 import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/utils';
 import { IConfigurationPropertySchema } from 'vs/platform/configuration/common/configurationRegistry';
 import { createValidator, getInvalidTypeError } from 'vs/workbench/services/preferences/common/preferencesValidation';
@@ -30,7 +30,7 @@ suite('Preferences Validation', () => {
 					(message: string) => {
 						const actual = this.validator(input);
 						assert.ok(actual);
-						assert(actual!.indexOf(message) > -1,
+						assert(actual.indexOf(message) > -1,
 							`Expected error of ${JSON.stringify(this.settings)} on \`${input}\` to contain ${message}. Got ${this.validator(input)}.`);
 					}
 			};
@@ -357,7 +357,7 @@ suite('Preferences Validation', () => {
 					(message: string) => {
 						const actual = this.validator(input);
 						assert.ok(actual);
-						assert(actual!.indexOf(message) > -1,
+						assert(actual.indexOf(message) > -1,
 							`Expected error of ${JSON.stringify(this.settings)} on \`${input}\` to contain ${message}. Got ${this.validator(input)}.`);
 					}
 			};
