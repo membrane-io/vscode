@@ -6,6 +6,7 @@
 'use strict';
 
 const gulp = require('gulp');
+const Vinyl = require('vinyl');
 const path = require('path');
 const es = require('event-stream');
 const util = require('./lib/util');
@@ -215,6 +216,11 @@ function packageTask(sourceFolderName, destinationFolderName) {
 			gulp.src('resources/server/code-512.png', { base: 'resources/server' })
 		);
 
+		const version = new Vinyl({
+			path: 'version.json',
+			contents: Buffer.from(commit)
+		});
+
 		const all = es.merge(
 			packageJsonStream,
 			license,
@@ -222,7 +228,8 @@ function packageTask(sourceFolderName, destinationFolderName) {
 			deps,
 			favicon,
 			manifest,
-			pwaicons
+			pwaicons,
+			version
 		);
 
 		const result = all
