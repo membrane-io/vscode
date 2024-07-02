@@ -15,7 +15,7 @@ import { CommandsRegistry, ICommandHandler } from '../../../../platform/commands
 import { ContextKeyExpr, ContextKeyExpression } from '../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { FilesExplorerFocusCondition, ExplorerRootContext, ExplorerFolderContext, ExplorerResourceWritableContext, ExplorerResourceCut, ExplorerResourceMoveableToTrash, ExplorerResourceAvailableEditorIdsContext, FoldersViewVisibleContext } from '../common/files.js';
-import { ADD_ROOT_FOLDER_COMMAND_ID, ADD_ROOT_FOLDER_LABEL } from '../../../browser/actions/workspaceCommands.js';
+// import { ADD_ROOT_FOLDER_COMMAND_ID, ADD_ROOT_FOLDER_LABEL } from '../../../browser/actions/workspaceCommands.js';
 import { CLOSE_SAVED_EDITORS_COMMAND_ID, CLOSE_EDITORS_IN_GROUP_COMMAND_ID, CLOSE_EDITOR_COMMAND_ID, CLOSE_OTHER_EDITORS_IN_GROUP_COMMAND_ID, REOPEN_WITH_COMMAND_ID } from '../../../browser/parts/editor/editorCommands.js';
 import { AutoSaveAfterShortDelayContext } from '../../../services/filesConfiguration/common/filesConfigurationService.js';
 import { WorkbenchListDoubleSelection } from '../../../../platform/list/browser/listService.js';
@@ -612,18 +612,20 @@ MenuRegistry.appendMenuItem(MenuId.ExplorerContext, {
 	when: ResourceContextKey.IsFileSystemResource
 });
 
-MenuRegistry.appendMenuItem(MenuId.ExplorerContext, {
-	group: '2_workspace',
-	order: 10,
-	command: {
-		id: ADD_ROOT_FOLDER_COMMAND_ID,
-		title: ADD_ROOT_FOLDER_LABEL,
-	},
-	when: ContextKeyExpr.and(ExplorerRootContext, ContextKeyExpr.or(EnterMultiRootWorkspaceSupportContext, WorkbenchStateContext.isEqualTo('workspace')))
-});
+// Membrane: Programs are only added to the workspace by creating programs
+// MenuRegistry.appendMenuItem(MenuId.ExplorerContext, {
+// 	group: '2_workspace',
+// 	order: 10,
+// 	command: {
+// 		id: ADD_ROOT_FOLDER_COMMAND_ID,
+// 		title: ADD_ROOT_FOLDER_LABEL
+// 	},
+// 	when: ContextKeyExpr.and(ExplorerRootContext, ContextKeyExpr.or(EnterMultiRootWorkspaceSupportContext, WorkbenchStateContext.isEqualTo('workspace')))
+// });
 
 MenuRegistry.appendMenuItem(MenuId.ExplorerContext, {
-	group: '2_workspace',
+	// Membrane: update position to delete program item
+	group: '7_modification',
 	order: 30,
 	command: {
 		id: REMOVE_ROOT_FOLDER_COMMAND_ID,
