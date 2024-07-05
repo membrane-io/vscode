@@ -720,10 +720,13 @@ export class WorkspaceConfiguration extends Disposable {
 		if (reload) {
 			await this.reload();
 		}
-		this.updateCache();
+		// MEMBRANE: don't cache the workspace configuration (i.e. folders). We want this to be generated on launch by the
+		// extension from the files in the user's account.
+		// this.updateCache();
 		this._onDidUpdateConfiguration.fire(fromCache);
 	}
 
+	// @ts-ignore 6133
 	private async updateCache(): Promise<void> {
 		if (this._workspaceIdentifier && this.configurationCache.needsCaching(this._workspaceIdentifier.configPath) && this._workspaceConfiguration instanceof FileServiceBasedWorkspaceConfiguration) {
 			const content = await this._workspaceConfiguration.resolveContent(this._workspaceIdentifier);
