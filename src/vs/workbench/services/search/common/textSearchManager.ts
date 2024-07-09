@@ -42,11 +42,7 @@ export class TextSearchManager {
 
 				if (!this.isLimitHit) {
 					const resultSize = this.resultSize(result);
-					if (
-						extensionResultIsMatch(result) &&
-						typeof this.query.maxResults === 'number' &&
-						this.resultCount + resultSize > this.query.maxResults
-					) {
+					if (extensionResultIsMatch(result) && typeof this.query.maxResults === 'number' && this.resultCount + resultSize > this.query.maxResults) {
 						this.isLimitHit = true;
 						isCanceled = true;
 						tokenSource.cancel();
