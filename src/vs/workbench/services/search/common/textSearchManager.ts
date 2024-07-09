@@ -60,7 +60,7 @@ export class TextSearchManager {
 					const newResultSize = this.resultSize(result);
 					this.resultCount += newResultSize;
 					if (newResultSize > 0 || !extensionResultIsMatch(result)) {
-						this.collector!.add(result, 0); // Using 0 as a default folder index
+						this.collector!.add(result, 0); // MEMBRANE: Using 0 as a default folder index
 					}
 				}
 			};
