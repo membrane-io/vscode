@@ -65,7 +65,7 @@ export class TextSearchManager {
 				}
 			};
 
-			// Single search call
+			// MEMBRANE: Single search call
 			const folderQuery = this.query.folderQueries?.[0] || {
 				folder: URI.file('/'),
 			};
