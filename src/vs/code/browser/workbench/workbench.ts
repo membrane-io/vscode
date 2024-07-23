@@ -15,9 +15,17 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 class SecretStorageProvider implements ISecretStorageProvider {
 	public type: 'persisted';
+	public membraneToken: string | null;
+	private getAuthToken: () => Promise<string>;
 
 	constructor() {
 		this.type = 'persisted';
+		this.membraneToken = null;
+		// Capture the window function
+		this.getAuthToken = (window as any).globalIdeState.getAuthToken;
+		(window as any).globalIdeState.getAuthToken = () => {
+			throw new Error('This function is no longer available');
+		};
 	}
 
 	async get(key: string): Promise<string | undefined> {
@@ -32,15 +40,12 @@ class SecretStorageProvider implements ISecretStorageProvider {
 			extensionKey?.extensionId === 'membrane.membrane' &&
 			extensionKey?.key === 'membraneApiToken'
 		) {
-			// HACK: Find the first key that matches the pattern of auth0 React
-			const localStorageKey = Object.keys(localStorage).find((key) =>
-				key.includes('::default::openid')
-			);
-			if (localStorageKey) {
-				const json = localStorage.getItem(localStorageKey);
-				const value = JSON.parse(json!);
-				return value.body.access_token;
-			} else {
+			try {
+				if (!this.membraneToken) {
+					this.membraneToken = await this.getAuthToken();
+				}
+				return this.membraneToken;
+			} catch (error) {
 				throw new Error('Failed to read Membrane API token');
 			}
 		}
