@@ -15,12 +15,10 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 class SecretStorageProvider implements ISecretStorageProvider {
 	public type: 'persisted';
-	public membraneToken: string | null;
 	private getAuthToken: () => Promise<string>;
 
 	constructor() {
 		this.type = 'persisted';
-		this.membraneToken = null;
 		// Capture the window function
 		this.getAuthToken = (window as any).globalIdeState.getAuthToken;
 		(window as any).globalIdeState.getAuthToken = () => {
@@ -41,12 +39,9 @@ class SecretStorageProvider implements ISecretStorageProvider {
 			extensionKey?.key === 'membraneApiToken'
 		) {
 			try {
-				if (!this.membraneToken) {
-					this.membraneToken = await this.getAuthToken();
-				}
-				return this.membraneToken;
+				return await this.getAuthToken();
 			} catch (error) {
-				throw new Error('Failed to read Membrane API token');
+				throw new Error(`Failed to read Membrane API token: ${error}`);
 			}
 		}
 		return localStorage.getItem(key) ?? undefined;
