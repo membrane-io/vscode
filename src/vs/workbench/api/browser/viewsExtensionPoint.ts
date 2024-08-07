@@ -350,13 +350,13 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 				}
 				switch (key) {
 					case 'activitybar': {
-						// MEMBRANE: move explorer to auxiliary bar (right pane)
-						const location = value?.[0].id === 'membraneContainer' ? ViewContainerLocation.AuxiliaryBar : ViewContainerLocation.Sidebar;
-						activityBarOrder = this.registerCustomViewContainers(value, description, activityBarOrder, existingViewContainers, location);
+						// MEMBRANE: ensure Navigator is first in activity bar (left sidebar)
+						const order = value?.[0]?.id === 'membraneContainer' ? 0 : activityBarOrder;
+						activityBarOrder = this.registerCustomViewContainers(value, description, order, existingViewContainers, ViewContainerLocation.Sidebar);
 						break;
 					}
 					case 'panel': {
-						// MEMBRANE: ensure logs are first in panel (bottom pane)
+						// MEMBRANE: ensure Logs are first in panel (bottom pane)
 						const order = description.identifier.value === 'membrane.membrane' ? 0 : panelOrder;
 						panelOrder = this.registerCustomViewContainers(value, description, order, existingViewContainers, ViewContainerLocation.Panel);
 						break;
