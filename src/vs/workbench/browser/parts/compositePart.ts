@@ -417,6 +417,14 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		const $this = this;
 		return {
 			updateTitle: (id, title, keybinding) => {
+				// MEMBRANE: hide title bar for Membrane Navigator
+				if (id.includes('membraneContainer')) {
+					parent.style.display = 'none';
+				} else {
+					// reset title bar display when toggling to another composite
+					parent.style.display = 'flex';
+				}
+
 				// The title label is shared for all composites in the base CompositePart
 				if (!this.activeComposite || this.activeComposite.getId() === id) {
 					titleLabel.innerText = title;
