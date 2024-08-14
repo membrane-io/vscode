@@ -141,7 +141,7 @@ export default class LanguageProvider extends Disposable {
 			return;
 		}
 
-		if (diagnosticsKind === DiagnosticKind.Semantic && isWeb() && this.client.configuration.webProjectWideIntellisenseSuppressSemanticErrors) {
+		if (diagnosticsKind === DiagnosticKind.Semantic && isWeb()) {
 			return;
 		}
 
