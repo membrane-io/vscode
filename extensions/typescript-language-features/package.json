@@ -1322,7 +1322,7 @@
         },
         "typescript.tsserver.web.projectWideIntellisense.suppressSemanticErrors": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "%configuration.tsserver.web.projectWideIntellisense.suppressSemanticErrors%",
           "scope": "window"
         },
@@ -1333,7 +1333,7 @@
         },
         "typescript.experimental.tsserver.web.typeAcquisition.enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "%configuration.experimental.tsserver.web.typeAcquisition.enabled%",
           "scope": "window",
           "tags": [
