@@ -14,6 +14,7 @@ import { localize } from 'vs/nls';
 import { createFileSystemProviderError, FileChangeType, IFileDeleteOptions, IFileOverwriteOptions, FileSystemProviderCapabilities, FileSystemProviderError, FileSystemProviderErrorCode, FileType, IFileWriteOptions, IFileChange, IFileSystemProviderWithFileReadWriteCapability, IStat, IWatchOptions } from 'vs/platform/files/common/files';
 import { DBClosedError, IndexedDB } from 'vs/base/browser/indexedDB';
 import { BroadcastDataChannel } from 'vs/base/browser/broadcast';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 
 export type IndexedDBFileSystemProviderErrorDataClassification = {
 	owner: 'sandy081';
@@ -187,7 +188,13 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 	private cachedFiletree: Promise<IndexedDBFileSystemNode> | undefined;
 	private writeManyThrottler: Throttler;
 
-	constructor(readonly scheme: string, private indexedDB: IndexedDB, private readonly store: string, watchCrossWindowChanges: boolean) {
+	constructor(
+		readonly scheme: string,
+		private indexedDB: IndexedDB,
+		private readonly store: string,
+		watchCrossWindowChanges: boolean,
+		@ICommandService private readonly _commandService: ICommandService,
+	) {
 		super();
 		this.writeManyThrottler = new Throttler();
 
@@ -283,6 +290,12 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 	}
 
 	async writeFile(resource: URI, content: Uint8Array, opts: IFileWriteOptions): Promise<void> {
+		if (resource.path === '/User/settings.json') {
+			// Allowed are the primitive types string, boolean, number, undefined, and null,
+			// as well as Position, Range, Uri and Location.
+			const contentString = new TextDecoder().decode(content);
+			await this._commandService.executeCommand('membrane.updateSettingsData', 'user-data-settings', contentString);
+		}
 		try {
 			const existing = await this.stat(resource).catch(() => undefined);
 			if (existing?.type === FileType.Directory) {

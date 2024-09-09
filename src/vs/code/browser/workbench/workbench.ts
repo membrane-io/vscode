@@ -10,12 +10,14 @@ import {
 	IWorkspace,
 } from 'vs/workbench/browser/web.api';
 import { ISecretStorageProvider } from 'vs/platform/secrets/common/secrets';
+import { VSBuffer } from 'vs/base/common/buffer';
 declare const window: any;
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 class SecretStorageProvider implements ISecretStorageProvider {
 	public type: 'persisted';
-	private getAuthToken: () => Promise<string>;
+	private static instance: SecretStorageProvider;
+	public getAuthToken: () => Promise<string>;
 
 	constructor() {
 		this.type = 'persisted';
@@ -24,6 +26,13 @@ class SecretStorageProvider implements ISecretStorageProvider {
 		(window as any).globalIdeState.getAuthToken = () => {
 			throw new Error('This function is no longer available');
 		};
+	}
+
+	public static getInstance(): SecretStorageProvider {
+		if (!SecretStorageProvider.instance) {
+			SecretStorageProvider.instance = new SecretStorageProvider();
+		}
+		return SecretStorageProvider.instance;
 	}
 
 	async get(key: string): Promise<string | undefined> {
@@ -93,7 +102,7 @@ class SecretStorageProvider implements ISecretStorageProvider {
 		},
 	};
 
-	config.secretStorageProvider = new SecretStorageProvider();
+	config.secretStorageProvider = SecretStorageProvider.getInstance();
 
 	config.commands = [
 		// Used to refresh the page from the extension when a new version of the IDE is known to exist.
@@ -106,9 +115,92 @@ class SecretStorageProvider implements ISecretStorageProvider {
 			}
 		}];
 
-	config.homeIndicator = { href: window.location.origin, icon: 'home', title: 'Membrane Home' };
+	try {
+		const res = await membraneApi('GET', `/settings?key=user-data-settings`);
+		const userData = await res.text();
 
+		await writeIndexedDbData(userData, {
+			dbName: 'vscode-web-db',
+			storeName: 'vscode-userdata-store',
+			key: '/User/settings.json',
+		});
+	} catch (error) {
+		console.log('Failed to retrieve Membrane user data: ', error);
+	}
+
+	config.homeIndicator = { href: window.location.origin, icon: 'home', title: 'Membrane Home' };
 	// eslint-disable-next-line no-restricted-syntax
 	const domElement = document.body;
 	create(domElement, config);
 })();
+
+interface writeIndexedDbDataOptions {
+	dbName: string;
+	storeName: string;
+	key: string;
+}
+
+async function writeIndexedDbData(
+	data: string | object,
+	options: writeIndexedDbDataOptions,
+): Promise<void> {
+	const { dbName, storeName, key } = options;
+
+	return new Promise((resolve, reject) => {
+		const request = indexedDB.open(dbName);
+
+		request.onerror = (event) => {
+			reject(`Error opening database: ${(event.target as any).error}`);
+		};
+
+		request.onsuccess = (event) => {
+			const db = (event.target as IDBOpenDBRequest).result;
+			const tx = db.transaction(storeName, 'readwrite');
+			const store = tx.objectStore(storeName);
+
+			const dataToStore =
+				typeof data === 'string' ? data : JSON.stringify(data);
+			const putRequest = store.put(
+				VSBuffer.fromString(dataToStore).buffer,
+				key,
+			);
+
+			putRequest.onerror = (event) => {
+				reject(`Error writing data: ${(event.target as any).error}`);
+			};
+
+			putRequest.onsuccess = () => {
+				resolve();
+			};
+
+			tx.oncomplete = () => {
+				db.close();
+			};
+		};
+	});
+}
+
+async function membraneApi(
+	method: 'GET',
+	path: `/${string}`,
+	body?: BodyInit
+): Promise<Response> {
+	const isDev = window.location.hostname === 'localhost';
+	const baseUrl = isDev ? 'http://localhost:8091' : 'https://api.membrane.io';
+
+	const secretProvider = SecretStorageProvider.getInstance();
+	const token = await secretProvider.getAuthToken();
+
+	if (!token) {
+		throw new Error('Failed to retrieve Membrane API token');
+	}
+
+	return await fetch(`${baseUrl}${path}`, {
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		},
+		body,
+	});
+}
