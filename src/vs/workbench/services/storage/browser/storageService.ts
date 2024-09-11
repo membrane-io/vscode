@@ -413,7 +413,11 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 
 		// Handle Membrane API updates
 		if (didUpdate) {
-			await this.updateMembraneItems(request);
+			try {
+				await this.updateMembraneItems(request);
+			} catch (error) {
+				console.error('Failed to update membrane items:', error);
+			}
 		}
 
 		// Broadcast changes to other windows/tabs if enabled
@@ -431,7 +435,7 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 	private async updateMembraneItems(request: IUpdateRequest): Promise<void> {
 		const updatePromises: Promise<void>[] = [];
 		// Handle inserts/updates
-		if (request.insert && request.insert instanceof Map) {
+		if (request.insert) {
 			for (const [key, value] of request.insert.entries()) {
 				if (this.MEMBRANE_KEYS.includes(key)) {
 					updatePromises.push(this.updateMembraneItem(key, value));
@@ -445,10 +449,10 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 		try {
 			const res = await membraneApi('POST', `/settings?key=${encodeURIComponent(key)}`, value);
 			if (res.status !== 200) {
-				console.log(`Unexpected status code ${res.status} when updating ${key} in Membrane API`);
+				console.log(`Unexpected status code ${res.status} when updating setting ${key} in Membrane`);
 			}
 		} catch (error) {
-			console.log(`Error updating ${key} in Membrane API:`, error);
+			console.log(`Error updating ${key} in Membrane:`, error);
 		}
 	}
 
