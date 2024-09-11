@@ -13,6 +13,7 @@ import { Emitter } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { assertIsDefined } from 'vs/base/common/types';
 import { InMemoryStorageDatabase, isStorageItemsChangeEvent, IStorage, IStorageDatabase, IStorageItemsChangeEvent, IUpdateRequest, Storage } from 'vs/base/parts/storage/common/storage';
+import { membraneApi } from 'vs/workbench/common/membrane';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractStorageService, isProfileUsingDefaultStorage, IS_NEW_KEY, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { isUserDataProfile, IUserDataProfile } from 'vs/platform/userDataProfile/common/userDataProfile';
@@ -289,6 +290,12 @@ interface IndexedDBStorageDatabaseOptions {
 
 export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBStorageDatabase {
 
+	private readonly MEMBRANE_KEYS = [
+		'memento/webviewView.membrane.logs',
+		'memento/webviewView.membrane.navigator',
+		'memento/webviewView.membrane.packages'
+	];
+
 	static async createApplicationStorage(logService: ILogService): Promise<IIndexedDBStorageDatabase> {
 		return IndexedDBStorageDatabase.create({ id: 'global', broadcastChanges: true }, logService);
 	}
@@ -372,7 +379,25 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			return typeof value === 'string';
 		}
 
-		return db.getKeyValues<string>(IndexedDBStorageDatabase.STORAGE_OBJECT_STORE, isValid);
+		const items = await db.getKeyValues<string>(IndexedDBStorageDatabase.STORAGE_OBJECT_STORE, isValid);
+
+		for (const key of this.MEMBRANE_KEYS) {
+			try {
+				const res = await membraneApi('GET', `/settings?key=${encodeURIComponent(key)}`);
+				if (res.status === 200) {
+					const data = await res.text();
+					if (isValid(data)) {
+						items.set(key, data);
+					}
+				} else {
+					console.log(`Unexpected status code ${res.status} from Membrane API for ${key}`);
+				}
+			} catch (error) {
+				console.log(`Error fetching ${key} from Membrane API:`, error);
+			}
+		}
+
+		return items;
 	}
 
 	async updateItems(request: IUpdateRequest): Promise<void> {
@@ -386,6 +411,11 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			this.pendingUpdate = undefined;
 		}
 
+		// Handle Membrane API updates
+		if (didUpdate) {
+			await this.updateMembraneItems(request);
+		}
+
 		// Broadcast changes to other windows/tabs if enabled
 		// and only if we actually did update storage items.
 		if (this.broadcastChannel && didUpdate) {
@@ -395,6 +425,30 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			};
 
 			this.broadcastChannel.postData(event);
+		}
+	}
+
+	private async updateMembraneItems(request: IUpdateRequest): Promise<void> {
+		const updatePromises: Promise<void>[] = [];
+		// Handle inserts/updates
+		if (request.insert && request.insert instanceof Map) {
+			for (const [key, value] of request.insert.entries()) {
+				if (this.MEMBRANE_KEYS.includes(key)) {
+					updatePromises.push(this.updateMembraneItem(key, value));
+				}
+			}
+		}
+		await Promise.all(updatePromises);
+	}
+
+	private async updateMembraneItem(key: string, value: any): Promise<void> {
+		try {
+			const res = await membraneApi('POST', `/settings?key=${encodeURIComponent(key)}`, value);
+			if (res.status !== 200) {
+				console.log(`Unexpected status code ${res.status} when updating ${key} in Membrane API`);
+			}
+		} catch (error) {
+			console.log(`Error updating ${key} in Membrane API:`, error);
 		}
 	}
 
