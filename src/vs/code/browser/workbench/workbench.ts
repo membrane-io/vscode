@@ -147,14 +147,43 @@ async function writeIndexedDbData(
 	const { dbName, storeName, key } = options;
 
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(dbName);
-
+		const request = indexedDB.open(dbName, 1);
 		request.onerror = (event) => {
 			reject(`Error opening database: ${(event.target as any).error}`);
 		};
 
+		request.onupgradeneeded = (event) => {
+			const db = (event.target as IDBOpenDBRequest).result;
+			if (!db.objectStoreNames.contains(storeName)) {
+				db.createObjectStore(storeName);
+			}
+		};
+
 		request.onsuccess = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
+
+			if (!db.objectStoreNames.contains(storeName)) {
+				db.close();
+				const newVersion = db.version + 1;
+				const upgradeRequest = indexedDB.open(dbName, newVersion);
+
+				upgradeRequest.onupgradeneeded = (upgradeEvent) => {
+					const upgradedDb = (upgradeEvent.target as IDBOpenDBRequest).result;
+					upgradedDb.createObjectStore(storeName);
+				};
+
+				upgradeRequest.onsuccess = () => {
+					writeData(upgradeRequest.result);
+				};
+
+				upgradeRequest.onerror = (upgradeErr) => {
+					reject(`Error upgrading database: ${(upgradeErr.target as any).error}`);
+				};
+			} else {
+				writeData(db);
+			}
+		};
+		function writeData(db: IDBDatabase) {
 			const tx = db.transaction(storeName, 'readwrite');
 			const store = tx.objectStore(storeName);
 
@@ -176,7 +205,7 @@ async function writeIndexedDbData(
 			tx.oncomplete = () => {
 				db.close();
 			};
-		};
+		}
 	});
 }
 

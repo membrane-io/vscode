@@ -175,6 +175,7 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 	readonly onDidChangeCapabilities: Event<void> = Event.None;
 
 	private readonly extUri = new ExtUri(() => false) /* Case Sensitive */;
+	private commandService: ICommandService | undefined;
 
 	private readonly changesBroadcastChannel: BroadcastDataChannel<UriDto<IFileChange>[]> | undefined;
 	private readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
@@ -193,7 +194,6 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 		private indexedDB: IndexedDB,
 		private readonly store: string,
 		watchCrossWindowChanges: boolean,
-		@ICommandService private readonly _commandService: ICommandService,
 	) {
 		super();
 		this.writeManyThrottler = new Throttler();
@@ -206,6 +206,9 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 		}
 	}
 
+	setCommandService(commandService: ICommandService): void {
+		this.commandService = commandService;
+	}
 	watch(resource: URI, opts: IWatchOptions): IDisposable {
 		return Disposable.None;
 	}
@@ -294,7 +297,7 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 			// Allowed are the primitive types string, boolean, number, undefined, and null,
 			// as well as Position, Range, Uri and Location.
 			const contentString = new TextDecoder().decode(content);
-			await this._commandService.executeCommand('membrane.updateSettingsData', 'user-data-settings', contentString);
+			await this.commandService?.executeCommand('membrane.settings.update', 'user-data-settings', contentString);
 		}
 		try {
 			const existing = await this.stat(resource).catch(() => undefined);
