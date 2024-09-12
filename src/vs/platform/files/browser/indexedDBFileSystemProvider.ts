@@ -297,7 +297,7 @@ export class IndexedDBFileSystemProvider extends Disposable implements IFileSyst
 			// Allowed are the primitive types string, boolean, number, undefined, and null,
 			// as well as Position, Range, Uri and Location.
 			const contentString = new TextDecoder().decode(content);
-			await this.commandService?.executeCommand('membrane.settings.update', 'user-data-settings', contentString);
+			await this.commandService?.executeCommand('membrane.internal.handleSettingChanged', 'user-data-settings', contentString);
 		}
 		try {
 			const existing = await this.stat(resource).catch(() => undefined);

@@ -64,8 +64,12 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		}];
 
 	try {
-		const res = await membraneApi('GET', `/settings?key=user-data-settings`);
-		const userData = await res.text();
+		const res = await membraneApi('GET', `/settings?keys=${encodeURIComponent('user-data-settings')}`);
+		if (!res.ok) {
+			throw new Error(`HTTP error! status: ${res.status}`);
+		}
+		const settingsData = await res.json();
+		const userData = settingsData['user-data-settings'];
 
 		await writeIndexedDbData(userData, {
 			dbName: 'vscode-web-db',
@@ -73,7 +77,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 			key: '/User/settings.json',
 		});
 	} catch (error) {
-		console.log('Failed to retrieve Membrane user data: ', error);
+		console.error('Failed to retrieve Membrane settings: ', error);
 	}
 
 	config.homeIndicator = { href: window.location.origin, icon: 'home', title: 'Membrane Home' };

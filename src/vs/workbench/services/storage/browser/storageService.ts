@@ -381,20 +381,26 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 
 		const items = await db.getKeyValues<string>(IndexedDBStorageDatabase.STORAGE_OBJECT_STORE, isValid);
 
-		for (const key of this.MEMBRANE_KEYS) {
-			try {
-				const res = await membraneApi('GET', `/settings?key=${encodeURIComponent(key)}`);
-				if (res.status === 200) {
-					const data = await res.text();
-					if (isValid(data)) {
-						items.set(key, data);
-					}
-				} else {
-					console.log(`Unexpected status code ${res.status} from Membrane API for ${key}`);
-				}
-			} catch (error) {
-				console.log(`Error fetching ${key} from Membrane API:`, error);
+		try {
+			const keysParam = this.MEMBRANE_KEYS.join(',');
+			const res = await membraneApi('GET', `/settings?keys=${encodeURIComponent(keysParam)}`);
+
+			if (!res.ok) {
+				throw new Error(`HTTP error! status: ${res.status}`);
 			}
+
+			const settingsData = await res.json();
+
+			for (const key of this.MEMBRANE_KEYS) {
+				const data = settingsData[key];
+				if (data !== undefined && isValid(data)) {
+					items.set(key, data);
+				} else {
+					console.log(`No valid data found for key: ${key}`);
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching settings from Membrane API:', error);
 		}
 
 		return items;
@@ -447,12 +453,13 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 
 	private async updateMembraneItem(key: string, value: any): Promise<void> {
 		try {
-			const res = await membraneApi('POST', `/settings?key=${encodeURIComponent(key)}`, value);
-			if (res.status !== 200) {
-				console.log(`Unexpected status code ${res.status} when updating setting ${key} in Membrane`);
+			const res = await membraneApi('POST', '/settings', JSON.stringify({ key, value }));
+
+			if (!res.ok) {
+				throw new Error(`HTTP error! status: ${res.status}`);
 			}
 		} catch (error) {
-			console.log(`Error updating ${key} in Membrane:`, error);
+			console.error(`Error updating ${key} in Membrane:`, error);
 		}
 	}
 
