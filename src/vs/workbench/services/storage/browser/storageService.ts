@@ -13,7 +13,6 @@ import { Emitter } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { assertIsDefined } from 'vs/base/common/types';
 import { InMemoryStorageDatabase, isStorageItemsChangeEvent, IStorage, IStorageDatabase, IStorageItemsChangeEvent, IUpdateRequest, Storage } from 'vs/base/parts/storage/common/storage';
-import { membraneApi } from 'vs/workbench/common/membrane';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractStorageService, isProfileUsingDefaultStorage, IS_NEW_KEY, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { isUserDataProfile, IUserDataProfile } from 'vs/platform/userDataProfile/common/userDataProfile';
@@ -290,12 +289,6 @@ interface IndexedDBStorageDatabaseOptions {
 
 export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBStorageDatabase {
 
-	private readonly MEMBRANE_KEYS = [
-		'memento/webviewView.membrane.logs',
-		'memento/webviewView.membrane.navigator',
-		'memento/webviewView.membrane.packages'
-	];
-
 	static async createApplicationStorage(logService: ILogService): Promise<IIndexedDBStorageDatabase> {
 		return IndexedDBStorageDatabase.create({ id: 'global', broadcastChanges: true }, logService);
 	}
@@ -379,31 +372,7 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			return typeof value === 'string';
 		}
 
-		const items = await db.getKeyValues<string>(IndexedDBStorageDatabase.STORAGE_OBJECT_STORE, isValid);
-
-		try {
-			const keysParam = this.MEMBRANE_KEYS.join(',');
-			const res = await membraneApi('GET', `/settings?keys=${encodeURIComponent(keysParam)}`);
-
-			if (!res.ok) {
-				throw new Error(`HTTP error! status: ${res.status}`);
-			}
-
-			const settingsData = await res.json();
-
-			for (const key of this.MEMBRANE_KEYS) {
-				const data = settingsData[key];
-				if (data !== undefined && isValid(data)) {
-					items.set(key, data);
-				} else {
-					console.log(`No valid data found for key: ${key}`);
-				}
-			}
-		} catch (error) {
-			console.error('Error fetching settings from Membrane API:', error);
-		}
-
-		return items;
+		return db.getKeyValues<string>(IndexedDBStorageDatabase.STORAGE_OBJECT_STORE, isValid);
 	}
 
 	async updateItems(request: IUpdateRequest): Promise<void> {
@@ -417,15 +386,6 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			this.pendingUpdate = undefined;
 		}
 
-		// Handle Membrane API updates
-		if (didUpdate) {
-			try {
-				await this.updateMembraneItems(request);
-			} catch (error) {
-				console.error('Failed to update membrane items:', error);
-			}
-		}
-
 		// Broadcast changes to other windows/tabs if enabled
 		// and only if we actually did update storage items.
 		if (this.broadcastChannel && didUpdate) {
@@ -435,31 +395,6 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 			};
 
 			this.broadcastChannel.postData(event);
-		}
-	}
-
-	private async updateMembraneItems(request: IUpdateRequest): Promise<void> {
-		const updatePromises: Promise<void>[] = [];
-		// Handle inserts/updates
-		if (request.insert) {
-			for (const [key, value] of request.insert.entries()) {
-				if (this.MEMBRANE_KEYS.includes(key)) {
-					updatePromises.push(this.updateMembraneItem(key, value));
-				}
-			}
-		}
-		await Promise.all(updatePromises);
-	}
-
-	private async updateMembraneItem(key: string, value: any): Promise<void> {
-		try {
-			const res = await membraneApi('POST', '/settings', JSON.stringify({ key, value }));
-
-			if (!res.ok) {
-				throw new Error(`HTTP error! status: ${res.status}`);
-			}
-		} catch (error) {
-			console.error(`Error updating ${key} in Membrane:`, error);
 		}
 	}
 

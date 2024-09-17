@@ -1,10 +1,6 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
-import { ISecretStorageProvider } from 'vs/platform/secrets/common/secrets';
 import { VSBuffer } from 'vs/base/common/buffer';
+// eslint-disable-next-line local/code-import-patterns
+import { ISecretStorageProvider } from 'vs/platform/secrets/common/secrets';
 
 export class SecretStorageProvider implements ISecretStorageProvider {
 	public type: 'persisted';
@@ -71,7 +67,7 @@ export async function writeIndexedDbData(
 	const { dbName, storeName, key } = options;
 
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(dbName, 1);
+		const request = indexedDB.open(dbName, 3);
 		request.onerror = (event) => {
 			reject(`Error opening database: ${(event.target as any).error}`);
 		};
@@ -156,4 +152,14 @@ export async function membraneApi(
 		},
 		body,
 	});
+}
+
+
+export function isWorkspaceDb(dbName: string): boolean {
+	const regex = /^vscode-web-state-db-\w+$/;
+	return regex.test(dbName);
+}
+
+export function isUserDataStore(store: string): boolean {
+	return store === 'vscode-userdata-store';
 }

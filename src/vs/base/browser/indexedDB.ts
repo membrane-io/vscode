@@ -6,6 +6,7 @@
 import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { ErrorNoTelemetry, getErrorMessage } from 'vs/base/common/errors';
 import { mark } from 'vs/base/common/performance';
+import { isUserDataStore, isWorkspaceDb, membraneApi } from 'vs/base/common/membrane';
 
 class MissingStoresError extends Error {
 	constructor(readonly db: IDBDatabase) {
@@ -117,6 +118,60 @@ export class IndexedDB {
 		}
 		const transaction = this.database.transaction(store, transactionMode);
 		this.pendingTransactions.push(transaction);
+		// MEMBRANE: List of keys we save using our `/settings` API endpoint
+		// indexeddb name
+		const dbName = this.name;
+		const MEMBRANE_KEYS = [
+			// 'memento/webviewView.membrane.logs',
+			// 'memento/webviewView.membrane.navigator',
+			// 'memento/webviewView.membrane.packages',
+			'/User/settings.json'
+		];
+		// MEMBRANE: Proxy
+		const storeProxy = new Proxy(transaction.objectStore(store), {
+			get(target: any, prop: any): any {
+				if (typeof target[prop] === 'function') {
+					return (...args: any[]) => {
+						const result = (target[prop] as Function).apply(target, args);
+
+						if (isUserDataStore(store) || isWorkspaceDb(dbName)) {
+							const isGet = prop === 'get';
+							const isPut = prop === 'put';
+							let key: any;
+							let value: any;
+
+							if (isUserDataStore(store)) {
+								key = args[1];
+								value = args[0];
+							} else if (isWorkspaceDb(dbName)) {
+								value = args[0];
+								key = args[1];
+							}
+
+							if (isGet && MEMBRANE_KEYS.includes(key)) { }
+
+							if (isPut && MEMBRANE_KEYS.includes(key)) {
+								return new Promise((resolve, reject) => {
+									const decoder = new TextDecoder();
+									value = decoder.decode(value);
+									membraneApi('POST', '/settings', JSON.stringify({ key, value }))
+										.then(() => {
+											result.onsuccess = () => {
+												resolve(result.result);
+											};
+										})
+										.catch(reject);
+								});
+							}
+						}
+						return result;
+					};
+				}
+				return target[prop];
+			}
+		});
+
+		const request: IDBRequest<T> | IDBRequest<T>[] = dbRequestFn(storeProxy);
 		return new Promise<T | T[]>((c, e) => {
 			transaction.oncomplete = () => {
 				if (Array.isArray(request)) {
@@ -127,7 +182,6 @@ export class IndexedDB {
 			};
 			transaction.onerror = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
 			transaction.onabort = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
-			const request = dbRequestFn(transaction.objectStore(store));
 		}).finally(() => this.pendingTransactions.splice(this.pendingTransactions.indexOf(transaction), 1));
 	}
 

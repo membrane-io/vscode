@@ -157,9 +157,6 @@ export class BrowserMain extends Disposable {
 			const labelService = accessor.get(ILabelService);
 			const embedderTerminalService = accessor.get(IEmbedderTerminalService);
 
-			for (const provider of this.indexedDBFileSystemProviders) {
-				provider.setCommandService(commandService);
-			}
 			let logger: DelayedLogChannel | undefined = undefined;
 
 			return {

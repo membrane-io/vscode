@@ -9,7 +9,7 @@ import {
 	IWorkbenchConstructionOptions,
 	IWorkspace,
 } from 'vs/workbench/browser/web.api';
-import { membraneApi, SecretStorageProvider, writeIndexedDbData } from 'vs/workbench/common/membrane';
+import { membraneApi, SecretStorageProvider, writeIndexedDbData } from 'vs/base/common/membrane';
 declare const window: any;
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -64,13 +64,12 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		}];
 
 	try {
-		const res = await membraneApi('GET', `/settings?keys=${encodeURIComponent('user-data-settings')}`);
+		const res = await membraneApi('GET', `/settings?keys=${encodeURIComponent('/User/settings.json')}`);
 		if (!res.ok) {
 			throw new Error(`HTTP error! status: ${res.status}`);
 		}
 		const settingsData = await res.json();
-		const userData = settingsData['user-data-settings'];
-
+		const userData = settingsData['/User/settings.json'];
 		await writeIndexedDbData(userData, {
 			dbName: 'vscode-web-db',
 			storeName: 'vscode-userdata-store',
