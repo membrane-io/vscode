@@ -66,56 +66,53 @@ export async function writeIndexedDbData(
 ): Promise<void> {
 	const { dbName, storeName, key } = options;
 
+	// vscode correct version
+	const DB_VERSION = 3;
+	const predefinedStores = ['vscode-userdata-store', 'vscode-logs-store', 'vscode-filehandles-store'];
+
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(dbName, 3);
+		const request = indexedDB.open(dbName, DB_VERSION);
+
 		request.onerror = (event) => {
-			reject(`Error opening database: ${(event.target as any).error}`);
+			reject(`Error opening database: ${(event.target as IDBRequest).error}`);
 		};
 
 		request.onupgradeneeded = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
-			if (!db.objectStoreNames.contains(storeName)) {
-				db.createObjectStore(storeName);
-			}
+
+			// create stores
+			predefinedStores.forEach((store) => {
+				if (!db.objectStoreNames.contains(store)) {
+					db.createObjectStore(store);
+				}
+			});
 		};
 
 		request.onsuccess = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
 
 			if (!db.objectStoreNames.contains(storeName)) {
+				reject(`Store ${storeName} does not exist in the database.`);
 				db.close();
-				const newVersion = db.version + 1;
-				const upgradeRequest = indexedDB.open(dbName, newVersion);
-
-				upgradeRequest.onupgradeneeded = (upgradeEvent) => {
-					const upgradedDb = (upgradeEvent.target as IDBOpenDBRequest).result;
-					upgradedDb.createObjectStore(storeName);
-				};
-
-				upgradeRequest.onsuccess = () => {
-					writeData(upgradeRequest.result);
-				};
-
-				upgradeRequest.onerror = (upgradeErr) => {
-					reject(`Error upgrading database: ${(upgradeErr.target as any).error}`);
-				};
-			} else {
-				writeData(db);
+				return;
 			}
+
+			writeData(db);
 		};
+
 		function writeData(db: IDBDatabase) {
 			const tx = db.transaction(storeName, 'readwrite');
 			const store = tx.objectStore(storeName);
 
-			const dataToStore =
-				typeof data === 'string' ? data : JSON.stringify(data);
+			const dataToStore = typeof data === 'string' ? data : JSON.stringify(data);
+
 			const putRequest = store.put(
 				VSBuffer.fromString(dataToStore).buffer,
 				key,
 			);
 
 			putRequest.onerror = (event) => {
-				reject(`Error writing data: ${(event.target as any).error}`);
+				reject(`Error writing data: ${(event.target as IDBRequest).error}`);
 			};
 
 			putRequest.onsuccess = () => {
