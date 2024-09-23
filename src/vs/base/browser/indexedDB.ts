@@ -120,7 +120,9 @@ export class IndexedDB {
 		const transaction = this.database.transaction(store, transactionMode);
 		this.pendingTransactions.push(transaction);
 
-		const requests: Array<{ prop: string; key: string; value?: any }> = [];
+		// MEMBRANE
+		// Proxy to save indexeddb reqs
+		const requests: Array<{ prop: string; key: string; value?: any; request: IDBRequest }> = [];
 		const storeProxy = new Proxy(transaction.objectStore(store), {
 			get(target: IDBObjectStore, prop: string): any {
 				return (...args: any[]) => {
@@ -129,35 +131,30 @@ export class IndexedDB {
 						prop,
 						key: prop === 'get' ? args[0] : args[1],
 						value: prop === 'put' ? args[0] : undefined,
+						request: result
 					});
 					return result;
 				};
 			},
 		});
 
-
-		const originalRequest: IDBRequest<T> | IDBRequest<T>[] = dbRequestFn(storeProxy);
-
+		const dbOperations: IDBRequest<T> | IDBRequest<T>[] = dbRequestFn(storeProxy);
 		return new Promise<T | T[]>((resolve, reject) => {
 			transaction.oncomplete = async () => {
 				try {
-					const membraneResults = await handleMembraneRequests(
-						requests.filter(req => isMembraneKey(req.key))
-					);
+					const membraneRequests = requests.filter(req => isMembraneKey(req.key));
+					const res = await handleMembraneRequests(membraneRequests);
 
-					if (Array.isArray(originalRequest)) {
-						resolve(originalRequest.map((r, index) => {
-							const membraneReq = requests[index];
-							return isMembraneKey(membraneReq.key)
-								? membraneResults[membraneResults.findIndex(mr => mr.key === membraneReq.key)]
-								: r.result;
-						}) as T[]);
-					} else {
-						const membraneReq = requests[0];
-						resolve(isMembraneKey(membraneReq.key)
-							? membraneResults[0]
-							: originalRequest.result as T);
-					}
+					const getResult = (r: IDBRequest) => {
+						const req = requests.find(r2 => r2.request === r);
+						if (req && isMembraneKey(req.key)) {
+							const result = res.find(mr => mr.key === req.key);
+							return result?.value;
+						}
+						return r.result;
+					};
+
+					resolve(Array.isArray(dbOperations) ? dbOperations.map(getResult) : getResult(dbOperations));
 				} catch (error) {
 					console.error('Error in transaction oncomplete:', error);
 					reject(error);
@@ -224,14 +221,15 @@ function isMembraneKey(key: any): boolean {
 	return MEMBRANE_KEYS.includes(key);
 }
 
-async function handleMembraneRequests(requests: Array<{ prop: string; key: string; value?: any }>): Promise<any[]> {
+async function handleMembraneRequests(requests: Array<{ prop: string; key: string; value?: any }>): Promise<Array<{ key: string; value: any }>> {
 	const handleGet = async (key: string) => {
 		try {
 			const res = await membraneApi('GET', `/settings?keys=${key}`);
-			return res.status === 404 ? undefined : (await res.json())[key];
+			const value = res.status === 404 ? undefined : (await res.json())[key];
+			return { key, value };
 		} catch (error) {
 			console.log(`Error fetching data for key ${key}:`, error);
-			return undefined;
+			return { key, value: undefined };
 		}
 	};
 
@@ -241,10 +239,10 @@ async function handleMembraneRequests(requests: Array<{ prop: string; key: strin
 				? new TextDecoder().decode(value)
 				: value;
 			await membraneApi('POST', '/settings', JSON.stringify({ key, value: stringValue }));
-			return true;
+			return { key, value: true };
 		} catch (error) {
 			console.log(`Error putting data for key ${key}:`, error);
-			return undefined;
+			return { key, value: undefined };
 		}
 	};
 
