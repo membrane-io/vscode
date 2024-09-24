@@ -22,6 +22,8 @@ export class DBClosedError extends Error {
 	}
 }
 
+const userSettingsResource = '/User/settings.json';
+
 export class IndexedDB {
 
 	static async create(name: string, version: number | undefined, stores: string[]): Promise<IndexedDB> {
@@ -119,7 +121,6 @@ export class IndexedDB {
 		}
 		const transaction = this.database.transaction(store, transactionMode);
 		this.pendingTransactions.push(transaction);
-
 		// MEMBRANE
 		// Proxy to save indexeddb reqs
 		const requests: Array<{ prop: string; key: string; value?: any; request: IDBRequest }> = [];
@@ -142,15 +143,31 @@ export class IndexedDB {
 		return new Promise<T | T[]>((resolve, reject) => {
 			transaction.oncomplete = async () => {
 				try {
+
 					const membraneRequests = requests.filter(req => isMembraneKey(req.key));
 					const res = await handleMembraneRequests(membraneRequests);
-
 					const getResult = (r: IDBRequest) => {
-						const req = requests.find(r2 => r2.request === r);
-						if (req && isMembraneKey(req.key)) {
-							const result = res.find(mr => mr.key === req.key);
-							return result?.value;
+						// find the req
+						const req = requests.find(req => req.request === r);
+						if (!req) {
+							return r.result;
 						}
+
+						// Membrane keys
+						if (isMembraneKey(req.key)) {
+							return res.find(mr => mr.key === req.key)?.value;
+						}
+
+						const isGetAllKeys = req.prop === 'getAllKeys';
+						const isUserDataStore =
+							r.source instanceof IDBObjectStore &&
+							r.source.name === 'vscode-userdata-store';
+
+						if (isGetAllKeys && isUserDataStore) {
+							const result = Array.isArray(r.result) ? r.result : [];
+							return result.includes(userSettingsResource) ? result : [...result, userSettingsResource];
+						}
+
 						return r.result;
 					};
 
