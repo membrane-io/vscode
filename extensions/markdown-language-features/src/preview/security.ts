@@ -60,8 +60,7 @@ export class ExtensionContentSecurityPolicyArbiter implements ContentSecurityPol
 	}
 
 	public shouldDisableSecurityWarnings(): boolean {
-		// MEMBRANE: disable markdown security warning
-		return this._workspaceState.get<boolean>(this._should_disable_security_warning_key, true);
+		return this._workspaceState.get<boolean>(this._should_disable_security_warning_key, false);
 	}
 
 	public setShouldDisableSecurityWarning(disabled: boolean): Thenable<void> {
