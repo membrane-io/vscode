@@ -103,19 +103,20 @@ export function hygiene(some, runEslint = true) {
 		this.emit('data', file);
 	});
 
-	const copyrights = es.through(function (file) {
-		const lines = file.__lines;
+	// MEMBRANE:
+	// const copyrights = es.through(function (file) {
+	// 	const lines = file.__lines;
 
-		for (let i = 0; i < copyrightHeaderLines.length; i++) {
-			if (lines[i] !== copyrightHeaderLines[i]) {
-				console.error(file.relative + ': Missing or bad copyright statement');
-				errorCount++;
-				break;
-			}
-		}
+	// 	for (let i = 0; i < copyrightHeaderLines.length; i++) {
+	// 		if (lines[i] !== copyrightHeaderLines[i]) {
+	// 			console.error(file.relative + ': Missing or bad copyright statement');
+	// 			errorCount++;
+	// 			break;
+	// 		}
+	// 	}
 
-		this.emit('data', file);
-	});
+	// 	this.emit('data', file);
+	// });
 
 	const formatting = es.map(function (file, cb) {
 		try {
@@ -165,9 +166,10 @@ export function hygiene(some, runEslint = true) {
 		.pipe(unicode)
 		.pipe(unicodeFilterStream.restore)
 		.pipe(filter(indentationFilter))
-		.pipe(indentation)
-		.pipe(filter(copyrightFilter))
-		.pipe(copyrights);
+		.pipe(indentation);
+		// MEMBRANE:
+		// .pipe(filter(copyrightFilter))
+		// .pipe(copyrights);
 
 	/** @type {import('stream').Stream[]} */
 	const streams = [

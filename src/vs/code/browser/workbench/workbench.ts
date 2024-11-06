@@ -13,9 +13,10 @@ import {
 import { ISecretStorageProvider } from '../../../platform/secrets/common/secrets.js';
 import { mainWindow } from '../../../base/browser/window.js';
 
-class SecretStorageProvider implements ISecretStorageProvider {
+export class SecretStorageProvider implements ISecretStorageProvider {
 	public type: 'persisted';
-	private getAuthToken: () => Promise<string>;
+	private static instance: SecretStorageProvider;
+	public getAuthToken: () => Promise<string>;
 
 	constructor() {
 		this.type = 'persisted';
@@ -24,6 +25,13 @@ class SecretStorageProvider implements ISecretStorageProvider {
 		(window as any).globalIdeState.getAuthToken = () => {
 			throw new Error('This function is no longer available');
 		};
+	}
+
+	public static getInstance(): SecretStorageProvider {
+		if (!SecretStorageProvider.instance) {
+			SecretStorageProvider.instance = new SecretStorageProvider();
+		}
+		return SecretStorageProvider.instance;
 	}
 
 	async get(key: string): Promise<string | undefined> {
@@ -111,3 +119,28 @@ class SecretStorageProvider implements ISecretStorageProvider {
 	const domElement = mainWindow.document.body;
 	create(domElement, finalConfig);
 })();
+
+export async function membraneApi(
+	method: 'GET' | 'POST',
+	path: `/${string}`,
+	body?: BodyInit
+): Promise<Response> {
+	const isDev = window.location.hostname === 'localhost';
+	const baseUrl = isDev ? 'http://localhost:8091' : 'https://api.membrane.io';
+
+	const secretProvider = SecretStorageProvider.getInstance();
+	const token = await secretProvider.getAuthToken();
+
+	if (!token) {
+		throw new Error('Failed to retrieve Membrane API token');
+	}
+
+	return await fetch(`${baseUrl}${path}`, {
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		},
+		body,
+	});
+}
