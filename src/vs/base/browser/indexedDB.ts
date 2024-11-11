@@ -6,7 +6,8 @@
 import { toErrorMessage } from '../common/errorMessage.js';
 import { ErrorNoTelemetry, getErrorMessage } from '../common/errors.js';
 import { mark } from '../common/performance.js';
-import { membraneApi } from '../../code/browser/workbench/workbench.js';
+// eslint-disable-next-line local/code-import-patterns
+import { membraneApi } from '../../code/browser/workbench/membrane.js';
 
 class MissingStoresError extends Error {
 	constructor(readonly db: IDBDatabase) {
@@ -122,14 +123,14 @@ export class IndexedDB {
 		this.pendingTransactions.push(transaction);
 		// MEMBRANE
 		// Proxy to save indexeddb reqs
-		const requests: Array<{ prop: string; key: string; value?: any; request: IDBRequest }> = [];
+		const requests: Array<{ prop: string; key: string; value?: unknown; request: IDBRequest }> = [];
 		const storeProxy = new Proxy(transaction.objectStore(store), {
-			get(target: IDBObjectStore, prop: string): any {
-				return (...args: any[]) => {
+			get(target: IDBObjectStore, prop: string): unknown {
+				return (...args: unknown[]) => {
 					const result = (target[prop as keyof IDBObjectStore] as Function).apply(target, args);
 					requests.push({
 						prop,
-						key: prop === 'get' ? args[0] : args[1],
+						key: (prop === 'get' ? args[0] : args[1]) as string,
 						value: prop === 'put' ? args[0] : undefined,
 						request: result
 					});
@@ -227,17 +228,17 @@ export class IndexedDB {
 }
 
 
-function isMembraneKey(key: any): boolean {
+function isMembraneKey(key: unknown): boolean {
 	const MEMBRANE_KEYS = [
 		'memento/webviewView.membrane.logs',
 		'memento/webviewView.membrane.navigator',
 		'memento/webviewView.membrane.packages',
 		'/User/settings.json'
 	];
-	return MEMBRANE_KEYS.includes(key);
+	return typeof key === 'string' && MEMBRANE_KEYS.includes(key);
 }
 
-async function handleMembraneRequests(requests: Array<{ prop: string; key: string; value?: any }>): Promise<Array<{ key: string; value: any }>> {
+async function handleMembraneRequests(requests: Array<{ prop: string; key: string; value?: unknown }>): Promise<Array<{ key: string; value: unknown }>> {
 	const handleGet = async (key: string) => {
 		try {
 			const res = await membraneApi('GET', `/settings?keys=${key}`);
@@ -249,7 +250,7 @@ async function handleMembraneRequests(requests: Array<{ prop: string; key: strin
 		}
 	};
 
-	const handlePut = async (key: string, value: any) => {
+	const handlePut = async (key: string, value: unknown) => {
 		try {
 			const stringValue = value instanceof Uint8Array
 				? new TextDecoder().decode(value)

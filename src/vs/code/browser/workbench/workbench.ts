@@ -4,143 +4,67 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { create } from '../../../workbench/workbench.web.main.internal.js';
-import { URI, UriComponents } from '../../../base/common/uri.js';
+import { URI } from '../../../base/common/uri.js';
 import {
 	IWorkbenchConstructionOptions,
 	IWorkspace,
 	// IWorkspaceProvider,
 } from '../../../workbench/browser/web.api.js';
-import { ISecretStorageProvider } from '../../../platform/secrets/common/secrets.js';
-import { mainWindow } from '../../../base/browser/window.js';
-
-export class SecretStorageProvider implements ISecretStorageProvider {
-	public type: 'persisted';
-	private static instance: SecretStorageProvider;
-	public getAuthToken: () => Promise<string>;
-
-	constructor() {
-		this.type = 'persisted';
-		// Capture the window function
-		this.getAuthToken = (window as any).globalIdeState.getAuthToken;
-		(window as any).globalIdeState.getAuthToken = () => {
-			throw new Error('This function is no longer available');
-		};
-	}
-
-	public static getInstance(): SecretStorageProvider {
-		if (!SecretStorageProvider.instance) {
-			SecretStorageProvider.instance = new SecretStorageProvider();
-		}
-		return SecretStorageProvider.instance;
-	}
-
-	async get(key: string): Promise<string | undefined> {
-		let extensionKey;
-		try {
-			// Check if the key is for an extension
-			extensionKey = JSON.parse(key);
-		} catch (err) {
-			// Only keys for extensions are stored as JSON so this must not be an extension secret.
-		}
-		if (
-			extensionKey?.extensionId === 'membrane.membrane' &&
-			extensionKey?.key === 'membraneApiToken'
-		) {
-			try {
-				return await this.getAuthToken();
-			} catch (error) {
-				throw new Error(`Failed to read Membrane API token: ${error}`);
-			}
-		}
-		return localStorage.getItem(key) ?? undefined;
-	}
-
-	async set(key: string, value: string): Promise<void> {
-		localStorage.setItem(key, value);
-	}
-
-	async delete(key: string): Promise<void> {
-		localStorage.removeItem(key);
-	}
-
-	async keys(): Promise<string[]> {
-		return [];
-	}
-}
+import { SecretStorageProvider } from '../workbench/membrane.js';
+declare const window: Window & { product?: Writeable<IWorkbenchConstructionOptions> };
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 (async function () {
-	let config: IWorkbenchConstructionOptions & {
-		folderUri?: UriComponents;
-		workspaceUri?: UriComponents;
-		domElementId?: string;
-	} = {};
+	// create workbench
+	let config: Writeable<IWorkbenchConstructionOptions>;
 
-	const windowProduct = (globalThis as { product?: unknown }).product;
-	if (windowProduct && typeof windowProduct === 'object') {
-		config = windowProduct as typeof config;
+	if (window.product) {
+		config = window.product;
 	} else {
 		const result = await fetch('/product.json');
-		if (!result.ok) {
-			throw new Error(`Failed to fetch product.json: ${result.status}`);
-		}
-		config = await result.json() as typeof config;
+		config = await result.json();
 	}
 
-	// Revive URIs in additionalBuiltinExtensions if present
-	let additionalBuiltinExtensions = config.additionalBuiltinExtensions;
-	if (Array.isArray(additionalBuiltinExtensions)) {
-		additionalBuiltinExtensions = additionalBuiltinExtensions.map((ext: unknown) => URI.revive(ext as UriComponents));
-	}
+	const isHttps = window.location.protocol === 'https:';
+	const isDev = window.location.hostname === 'localhost';
+	const extensionUrl = {
+		scheme: isHttps ? 'https' : 'http',
+		path: isDev ? '/membrane-dev' : '/membrane',
+	};
 
-	// Create final config object with all properties (avoiding readonly mutation)
-	const finalConfig: IWorkbenchConstructionOptions = {
-		...config,
-		additionalBuiltinExtensions,
-		workspaceProvider: {
-			workspace: { workspaceUri: URI.parse('memfs:/membrane.code-workspace') },
-			trusted: true,
-			open: async (
-				_workspace: IWorkspace,
-				_options?: { reuse?: boolean; payload?: Record<string, unknown> }
-			): Promise<boolean> => {
-				return true;
-			},
+	config.additionalBuiltinExtensions = [URI.revive(extensionUrl)];
+
+	config.workspaceProvider = {
+		// IMPORTANT: this filename must match the filename used in `memfs.ts`.
+		// TODO: Somehow use product.json to configure that globally
+		workspace: { workspaceUri: URI.parse('memfs:/membrane.code-workspace') },
+		payload: {
+			'skipReleaseNotes': 'true',
+			'skipWelcome': 'true',
 		},
-		secretStorageProvider: new SecretStorageProvider(),
-		defaultLayout: {
-			force: true,
-			views: [
-				{ id: 'membrane.explorer' },
-				{ id: 'membrane.logs' },
-			]
+		trusted: true,
+		open: async (
+			_workspace: IWorkspace,
+			_options?: { reuse?: boolean; payload?: object }
+		) => {
+			return true;
 		},
 	};
 
-	const domElement = mainWindow.document.body;
-	create(domElement, finalConfig);
+	config.secretStorageProvider = SecretStorageProvider.getInstance();
+
+	config.commands = [
+		// Used to refresh the page from the extension when a new version of the IDE is known to exist.
+		{ id: 'membrane.refreshPage', handler: () => window.location.reload() },
+		{
+			id: 'membrane.getLaunchParams', handler: () => {
+				// eslint-disable-next-line no-restricted-syntax
+				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
+				return meta?.content ?? '';
+			}
+		}];
+
+	// eslint-disable-next-line no-restricted-syntax
+	const domElement = document.body;
+	create(domElement, config);
 })();
-
-export async function membraneApi(
-	method: 'GET' | 'POST',
-	path: `/${string}`,
-	body?: BodyInit
-): Promise<Response> {
-	const isDev = window.location.hostname === 'localhost';
-	const baseUrl = isDev ? 'http://localhost:8091' : 'https://api.membrane.io';
-
-	const secretProvider = SecretStorageProvider.getInstance();
-	const token = await secretProvider.getAuthToken();
-
-	if (!token) {
-		throw new Error('Failed to retrieve Membrane API token');
-	}
-
-	return await fetch(`${baseUrl}${path}`, {
-		method,
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`,
-		},
-		body,
-	});
-}
