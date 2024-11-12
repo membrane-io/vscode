@@ -460,7 +460,7 @@
 	color: var(--vscode-titleBar-inactiveForeground);
 }
 
-/* Since we move the layout controls to the center, separate it from the command center */
+/* MEMBRANE: Since we move the layout controls to the center, separate it from the command center */
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-center {
 	gap: 10px;
 }
