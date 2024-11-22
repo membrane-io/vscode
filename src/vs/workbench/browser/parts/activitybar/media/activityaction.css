@@ -173,6 +173,7 @@
 	left: -2px;
 }
 
+/* MEMBRANE: reduce size of badge */
 .monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .badge .badge-content {
 	position: absolute;
 	top: 18px;
