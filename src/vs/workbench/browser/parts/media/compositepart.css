@@ -11,16 +11,19 @@
 	display: flex;
 }
 
-/* MEMBRANE: hide sidebar (Navigator) and panel (Logs) title */
-.monaco-workbench .part:has([id="workbench.view.extension.membraneContainer"]),
-.monaco-workbench .part:has([id="workbench.view.extension.membraneLogs"]) {
+/* MEMBRANE: add back composite title except for Navigator and Logs */
+.monaco-workbench .part:has(.content > .composite:not(
+	[id="workbench.view.extension.membraneContainer"],
+	[id="workbench.view.extension.membraneLogs"]
+)) {
 	height: 100% !important;
 
 	.composite.title {
-		display: none;
+		display: flex !important;
+		height: 35px !important;
 	}
 	.content {
-		height: 100% !important;
+		height: calc(100% - 35px) !important;
 	}
 }
 

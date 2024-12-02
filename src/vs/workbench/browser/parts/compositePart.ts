@@ -392,6 +392,11 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		const titleArea = append(parent, $('.composite'));
 		titleArea.classList.add('title');
 
+		// MEMBRANE: hide title area for Navigator and Logs
+		// We add it back for other parts in compositepart.css
+		titleArea.style.display = 'none';
+		titleArea.style.height = '0px';
+
 		// MEMBRANE: back to Navigator button
 		const backToNavigator = document.createElement('a');
 		backToNavigator.classList.add('back-to-membrane-navigator', 'codicon', 'codicon-x', 'action-item', 'action-label');
