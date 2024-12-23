@@ -267,7 +267,8 @@ export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewC
 		keybindings: { primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyE },
 		order: 0
 	},
-}, ViewContainerLocation.Sidebar, { isDefault: true });
+	// MEMBRANE: the Membrane Navigator is the default view container on the left sidebar
+}, ViewContainerLocation.Sidebar, { isDefault: false });
 
 const openFolder = localize('openFolder', "Open Folder");
 const addAFolder = localize('addAFolder', "add a folder");
