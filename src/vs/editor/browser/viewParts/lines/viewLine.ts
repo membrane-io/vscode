@@ -12,12 +12,13 @@ import { StringBuilder } from 'vs/editor/common/core/stringBuilder';
 import { IEditorConfiguration } from 'vs/editor/common/config/editorConfiguration';
 import { FloatHorizontalRange, VisibleRanges } from 'vs/editor/browser/view/renderingContext';
 import { LineDecoration } from 'vs/editor/common/viewLayout/lineDecorations';
-import { CharacterMapping, ForeignElementType, RenderLineInput, renderViewLine, LineRange, DomPosition } from 'vs/editor/common/viewLayout/viewLineRenderer';
+import { CharacterMapping, ForeignElementType, RenderLineInput, renderViewLine, LineRange, DomPosition, resolveRenderLineInput } from 'vs/editor/common/viewLayout/viewLineRenderer';
 import { ViewportData } from 'vs/editor/common/viewLayout/viewLinesViewportData';
 import { InlineDecorationType } from 'vs/editor/common/viewModel';
 import { ColorScheme, isHighContrast } from 'vs/platform/theme/common/theme';
 import { EditorOption, EditorFontLigatures } from 'vs/editor/common/config/editorOptions';
 import { DomReadingContext } from 'vs/editor/browser/viewParts/lines/domReadingContext';
+import { CommandService } from 'vs/workbench/services/commands/common/commandService';
 
 const canUseFastRenderedViewLine = (function () {
 	if (platform.isNative) {
@@ -227,6 +228,9 @@ export class ViewLine implements IVisibleLine {
 		sb.appendString(ViewLine.CLASS_NAME);
 		sb.appendString('">');
 
+		// MEMBRANE: Use MessagePort
+		CommandService.getInstance().executeCommand('membrane.textEditor.onLineChanged', lineNumber, deltaTop, resolveRenderLineInput(renderLineInput));
+
 		const output = renderViewLine(renderLineInput, sb);
 
 		sb.appendString('</div>');
@@ -259,6 +263,8 @@ export class ViewLine implements IVisibleLine {
 		if (this._renderedViewLine && this._renderedViewLine.domNode) {
 			this._renderedViewLine.domNode.setTop(deltaTop);
 			this._renderedViewLine.domNode.setHeight(this._options.lineHeight);
+			// MEMBRANE: Use MessagePort
+			CommandService.getInstance().executeCommand('membrane.textEditor.onLineMoved', lineNumber, deltaTop);
 		}
 	}
 

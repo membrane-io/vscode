@@ -25,6 +25,12 @@ export class CommandService extends Disposable implements ICommandService {
 	private readonly _onDidExecuteCommand: Emitter<ICommandEvent> = new Emitter<ICommandEvent>();
 	public readonly onDidExecuteCommand: Event<ICommandEvent> = this._onDidExecuteCommand.event;
 
+	// MEMBRANE: easy access to the singleton
+	private static _instance: CommandService;
+	public static getInstance(): ICommandService {
+		return CommandService._instance;
+	}
+
 	constructor(
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IExtensionService private readonly _extensionService: IExtensionService,
@@ -33,6 +39,9 @@ export class CommandService extends Disposable implements ICommandService {
 		super();
 		this._extensionService.whenInstalledExtensionsRegistered().then(value => this._extensionHostIsReady = value);
 		this._starActivation = null;
+
+		// MEMBRANE: easy access to the singleton
+		CommandService._instance = this;
 	}
 
 	private _activateStar(): Promise<void> {

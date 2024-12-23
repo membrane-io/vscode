@@ -439,7 +439,7 @@ class ResolvedRenderLineInput {
 	}
 }
 
-function resolveRenderLineInput(input: RenderLineInput): ResolvedRenderLineInput {
+export function resolveRenderLineInput(input: RenderLineInput): ResolvedRenderLineInput {
 	const lineContent = input.lineContent;
 
 	let isOverflowing: boolean;

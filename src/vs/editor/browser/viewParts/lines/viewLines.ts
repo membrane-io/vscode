@@ -24,6 +24,7 @@ import * as viewEvents from 'vs/editor/common/viewEvents';
 import { ViewportData } from 'vs/editor/common/viewLayout/viewLinesViewportData';
 import { Viewport } from 'vs/editor/common/viewModel';
 import { ViewContext } from 'vs/editor/common/viewModel/viewContext';
+import { CommandService } from 'vs/workbench/services/commands/common/commandService';
 
 class LastRenderedData {
 
@@ -261,9 +262,11 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 		return this._visibleLines.onLinesChanged(e);
 	}
 	public override onLinesDeleted(e: viewEvents.ViewLinesDeletedEvent): boolean {
+		CommandService.getInstance().executeCommand('membrane.textEditor.onLinesDeleted', e.fromLineNumber, e.toLineNumber - e.fromLineNumber + 1);
 		return this._visibleLines.onLinesDeleted(e);
 	}
 	public override onLinesInserted(e: viewEvents.ViewLinesInsertedEvent): boolean {
+		CommandService.getInstance().executeCommand('membrane.textEditor.onLinesInserted', e.fromLineNumber, e.toLineNumber - e.fromLineNumber + 1);
 		return this._visibleLines.onLinesInserted(e);
 	}
 	public override onRevealRangeRequest(e: viewEvents.ViewRevealRangeRequestEvent): boolean {
@@ -665,6 +668,8 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 		const adjustedScrollTop = this._context.viewLayout.getCurrentScrollTop() - viewportData.bigNumbersDelta;
 		this._linesContent.setTop(-adjustedScrollTop);
 		this._linesContent.setLeft(-this._context.viewLayout.getCurrentScrollLeft());
+
+		CommandService.getInstance().executeCommand('membrane.textEditor.onScrollChanged', adjustedScrollTop, this._context.viewLayout.getCurrentScrollLeft());
 	}
 
 	// --- width
