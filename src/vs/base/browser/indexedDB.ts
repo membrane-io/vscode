@@ -232,8 +232,9 @@ function isMembraneKey(key: unknown): boolean {
 	const MEMBRANE_KEYS = [
 		'memento/webviewView.membrane.logs',
 		'memento/webviewView.membrane.navigator',
-		'memento/webviewView.membrane.packages',
-		'/User/settings.json'
+		'memento/webviewView.membrane.program',
+		'/User/settings.json',
+		'/User/keybindings.json'
 	];
 	return typeof key === 'string' && MEMBRANE_KEYS.includes(key);
 }
