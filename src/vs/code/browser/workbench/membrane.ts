@@ -64,7 +64,9 @@ export async function membraneApi(
 	path: `/${string}`,
 	body?: BodyInit
 ): Promise<Response> {
-	const baseUrl = 'https://api.membrane.io';
+	// WARNING: It's important that this url is NOT controlled by the extension settings (i.e. the url used by the
+	// extension and gaze) because this function is used to load the user settings themselves.
+	const baseUrl = 'https://ide.membrane.io/api';
 
 	const secretProvider = SecretStorageProvider.getInstance();
 	const token = await secretProvider.getAuthToken();
