@@ -646,7 +646,13 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			},
 			views: {
 				defaults: this.getDefaultLayoutViews(this.environmentService, this.storageService),
-				containerToRestore: {}
+				containerToRestore: {
+					// MEMBRANE: If a user hides auxiliary bar through "Customize Layout"
+					// the preference is saved. on reload vscode respects that hidden state
+					// but our extension sees there's an active program and forces the aux bar open
+					// this overrieds the user's preference to make it feel less jarring
+					auxiliaryBar: 'workbench.view.extension.membraneAuxContainer'
+				}
 			}
 		};
 
@@ -701,12 +707,19 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 		// Auxiliary Panel to restore
 		if (this.isVisible(Parts.AUXILIARYBAR_PART)) {
-			const viewContainerToRestore = this.storageService.get(AuxiliaryBarPart.activePanelSettingsKey, StorageScope.WORKSPACE, this.viewDescriptorService.getDefaultViewContainer(ViewContainerLocation.AuxiliaryBar)?.id);
+			const viewContainerToRestore = this.storageService.get(AuxiliaryBarPart.activePanelSettingsKey, StorageScope.WORKSPACE);
 
-			if (viewContainerToRestore) {
+			if (viewContainerToRestore === 'undefined' || !viewContainerToRestore) {
+				// MEMBRANE: Handle undefined/empty auxiliary view container state
+				// If the stored view is undefined (which can happen during version updates or corrupted state),
+				// we clear all auxiliary bar related state (hidden status, size, active panel).
+				// This prevents the "drag a view here" empty state message and allows proper view initialization.
+				// Otherwise, if we have a valid view container, restore it normally.
+				this.storageService.remove(`${LayoutStateModel.STORAGE_PREFIX}auxiliaryBar.hidden`, StorageScope.WORKSPACE);
+				this.storageService.remove(`${LayoutStateModel.STORAGE_PREFIX}auxiliaryBar.size`, StorageScope.PROFILE);
+				this.storageService.remove(AuxiliaryBarPart.activePanelSettingsKey, StorageScope.WORKSPACE);
+			} else if (viewContainerToRestore) {
 				this.state.initialization.views.containerToRestore.auxiliaryBar = viewContainerToRestore;
-			} else {
-				this.stateModel.setRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN, true);
 			}
 		}
 
