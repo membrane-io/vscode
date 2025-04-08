@@ -104,6 +104,11 @@
 	height: var(--editor-group-tab-height);
 	box-sizing: border-box;
 	padding-left: 10px;
+
+	/* MEMBRANE: always hide dashboard tab */
+	&[title="Dashboard"] {
+		display: none;
+	}
 }
 
 .monaco-workbench .part.editor > .content .editor-group-container > .title > .tabs-and-actions-container.wrapping .tabs-container > .tab:last-child {
@@ -438,7 +443,7 @@
 
 /* Editor Actions Toolbar */
 
-/* MEMBRANE: These changes allows us to have two toolbars in the editor title for the show aux bar button */
+/* MEMBRANE: declarations with comments in this block allow us to have two toolbars in the editor title for the show aux bar button */
 .monaco-workbench .part.editor > .content .editor-group-container > .title .editor-actions {
 	display: flex; /* MEMBRANE: */
 	flex-direction: row; /* MEMBRANE: */

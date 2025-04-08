@@ -1373,6 +1373,11 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			return false;
 		}
 
+		// MEMBRANE: prevent closing dashboard
+		if (editor.getTitle() === 'Dashboard') {
+			return false;
+		}
+
 		// Check for confirmation and veto
 		const veto = await this.handleCloseConfirmation([editor]);
 		if (veto) {
@@ -1698,7 +1703,8 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			return true;
 		}
 
-		const editors = this.doGetEditorsToClose(args);
+		// MEMBRANE: prevent closing dashboard
+		const editors = this.doGetEditorsToClose(args).filter(e => e.getTitle() !== 'Dashboard');
 
 		// Check for confirmation and veto
 		const veto = await this.handleCloseConfirmation(editors.slice(0));
@@ -1798,7 +1804,9 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 
 		// Close all inactive editors first
 		const editorsToClose: EditorInput[] = [];
-		for (const editor of this.model.getEditors(EditorsOrder.SEQUENTIAL, options)) {
+
+		// MEMBRANE: prevent closing dashboard
+		for (const editor of this.model.getEditors(EditorsOrder.SEQUENTIAL, options).filter(e => e.getTitle() !== 'Dashboard')) {
 			if (!this.isActive(editor)) {
 				this.doCloseInactiveEditor(editor);
 			}

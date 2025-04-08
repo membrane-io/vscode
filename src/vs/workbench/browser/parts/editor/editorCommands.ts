@@ -1024,6 +1024,13 @@ function registerCloseEditorCommands() {
 			}
 
 			if (group) {
+				// MEMBRANE: prevent closing dashboard
+				const dashboard = group.editors.find(e => e.getTitle() === 'Dashboard');
+				if (dashboard) {
+					group.closeAllEditors(); // Method modified to not close dashboard
+					return;
+				}
+
 				editorGroupService.removeGroup(group);
 			}
 		}
