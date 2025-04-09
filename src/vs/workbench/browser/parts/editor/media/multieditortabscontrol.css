@@ -480,16 +480,6 @@
 	.action-item {
 		margin-right: 0px !important;
 		
-		/* Show Dashboard button */
-		&.menu-entry[title="Show Dashboard"] {
-			a.codicon-symbol-enum {
-				color: inherit;
-				border-radius: 0px;
-				padding: 7px;
-				margin-bottom: 0px;
-			}
-		}
-	
 		/* Separator vertical line */
 		&.disabled {
 			.separator {
@@ -498,6 +488,24 @@
 				width: 1px;
 				height: 30px;
 				opacity: 0.25;
+			}
+		}
+	
+		/* Show Dashboard button */
+		&.menu-entry[title="Show Dashboard"], &.menu-entry[title="Viewing Dashboard"] {
+			a {
+				border-radius: 0px;
+				padding-block: 7px;
+				padding-inline: 14px;
+				margin-bottom: 0px;
+
+				&:hover {
+					background-color: var(--vscode-button-secondaryHoverBackground);
+				}
+
+				&[aria-label="Viewing Dashboard"] {
+					background-color: var(--vscode-button-secondaryBackground);
+				}
 			}
 		}
 	
