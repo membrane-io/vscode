@@ -481,8 +481,9 @@
 		margin-right: 0px !important;
 		
 		/* Show Dashboard button */
-		&.menu-entry[title="Dashboard"] {
-			a[aria-label="Dashboard"] {
+		&.menu-entry[title="Show Dashboard"] {
+			a.codicon-symbol-enum {
+				color: inherit;
 				border-radius: 0px;
 				padding: 7px;
 				margin-bottom: 0px;

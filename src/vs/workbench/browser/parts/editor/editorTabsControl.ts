@@ -269,7 +269,8 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const membraneActions: IAction[] = [];
 		membraneActions.push(new MenuItemAction({
 			id: 'membrane.dashboard.show',
-			title: 'Dashboard',
+			title: 'Show Dashboard',
+			icon: Codicon.symbolEnum,
 		}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
 
 		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
