@@ -498,9 +498,15 @@
 				padding-block: 7px;
 				padding-inline: 14px;
 				margin-bottom: 0px;
+				transform: translateY(-1px);
 
 				&:hover {
 					background-color: var(--vscode-button-secondaryHoverBackground);
+				}
+
+				/* Match gaze inactive tab style */
+				&[aria-label="Show Dashboard"] {
+					opacity: 0.75;
 				}
 
 				&[aria-label="Viewing Dashboard"] {
