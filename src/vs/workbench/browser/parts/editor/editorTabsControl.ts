@@ -8,7 +8,9 @@ import { localize } from 'vs/nls';
 import { applyDragImage, DataTransfers } from 'vs/base/browser/dnd';
 import { Dimension, getActiveWindow, getWindow, isMouseEvent } from 'vs/base/browser/dom';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
-import { ActionsOrientation, IActionViewItem, prepareActions } from 'vs/base/browser/ui/actionbar/actionbar';
+// MEMBRANE: hide editor tab actions (e.g. Split Editor, More Actions)
+// import { prepareActions } from 'vs/base/browser/ui/actionbar/actionbar';
+import { ActionsOrientation, IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IAction, ActionRunner } from 'vs/base/common/actions';
 import { ResolvedKeybinding } from 'vs/base/common/keybindings';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
@@ -24,7 +26,7 @@ import { listActiveSelectionBackground, listActiveSelectionForeground } from 'vs
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { DraggedEditorGroupIdentifier, DraggedEditorIdentifier, fillEditorsDragData, isWindowDraggedOver } from 'vs/workbench/browser/dnd';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
-import { IEditorGroupsView, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from 'vs/workbench/browser/parts/editor/editor';
+import { EditorServiceImpl, IEditorGroupsView, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from 'vs/workbench/browser/parts/editor/editor';
 import { IEditorCommandsContext, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, EditorsOrder, EditorInputCapabilities, IToolbarActions, GroupIdentifier } from 'vs/workbench/common/editor';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { ResourceContextKey, ActiveEditorPinnedContext, ActiveEditorStickyContext, ActiveEditorGroupLockedContext, ActiveEditorCanSplitInGroupContext, SideBySideEditorActiveContext, ActiveEditorFirstInGroupContext, ActiveEditorAvailableEditorIdsContext, applyAvailableEditorIds, ActiveEditorLastInGroupContext } from 'vs/workbench/common/contextkeys';
@@ -52,6 +54,7 @@ import { Separator } from 'vs/base/common/actions';
 import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
 import { Codicon } from 'vs/base/common/codicons';
 import { ICommandService } from 'vs/platform/commands/common/commands';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export class EditorCommandsContextActionRunner extends ActionRunner {
 
@@ -146,7 +149,9 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		@IThemeService themeService: IThemeService,
 		@IEditorResolverService private readonly editorResolverService: IEditorResolverService,
 		@IHostService private readonly hostService: IHostService,
-		@ICommandService private readonly commandService: ICommandService
+		// MEMBRANE: inject command and editor services
+		@ICommandService private readonly commandService: ICommandService,
+		@IEditorService protected readonly editorService: EditorServiceImpl,
 	) {
 		super(themeService);
 
@@ -259,18 +264,31 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				this.updateMembraneActions();
 			}
 		}));
+		// Update when the active editor changes
+		this.editorActionsToolbarDisposables.add(this.editorService.onDidActiveEditorChange(() => {
+			this.updateMembraneActions();
+		}));
 		this.updateMembraneActions();
 	}
 
 	// MEMBRANE: see membraneActionsToolbar initialization above
 	private updateMembraneActions() {
 		const membraneActions: IAction[] = [];
-		const show = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
-		if (show) {
+
+		const isDashboardShowing = this.groupView.activeEditor?.getName() === 'Dashboard';
+		membraneActions.push(new Separator());
+		membraneActions.push(new MenuItemAction({
+			id: 'membrane.dashboard.show',
+			title: 'Dashboard',
+			tooltip: isDashboardShowing ? 'Viewing Dashboard' : 'Show Dashboard',
+		}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
+
+		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
+		if (isAuxBarHidden) {
 			membraneActions.push(new Separator());
 			membraneActions.push(new MenuItemAction({
 				id: 'workbench.action.toggleAuxiliaryBar',
-				title: 'Show Auxiliary Bar',
+				title: 'Show Brane (AI) & Program Info',
 				icon: Codicon.chevronLeft,
 			}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
 		}
@@ -303,11 +321,10 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const editorActions = this.groupView.createEditorActions(this.editorActionsDisposables);
 		this.editorActionsDisposables.add(editorActions.onDidChange(() => this.updateEditorActionsToolbar()));
 
-		const editorActionsToolbar = assertIsDefined(this.editorActionsToolbar);
-		const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
-		editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
-
-
+		// MEMBRANE: hide editor tab actions (e.g. Split Editor, More Actions)
+		// const editorActionsToolbar = assertIsDefined(this.editorActionsToolbar);
+		// const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
+		// editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
 	}
 
 	protected abstract prepareEditorActions(editorActions: IToolbarActions): IToolbarActions;
