@@ -471,8 +471,6 @@
 }
 
 /* MEMBRANE: button to open the aux bar (editor action tab in vscode terminology) */
-/* NOTE: we reverted styles for special dashboard tab. See: https://github.com/membrane-io/vscode/pull/61/files */
-/* Reverted because (1) split view weirdness, and (2) mismatching styles between editor and auxiliary bar tabs */
 .monaco-workbench .actions-container[aria-label="Additional Editor actions"] {
 	.action-item {
 		margin-right: 0px !important;

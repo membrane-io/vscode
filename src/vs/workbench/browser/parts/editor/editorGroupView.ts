@@ -1373,12 +1373,6 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			return false;
 		}
 
-		// MEMBRANE: we can prevent closing the dashboard tab. See also: editorGroupView.ts
-		// https://github.com/membrane-io/vscode/pull/61/files
-		// if (editor.getTitle() === 'Dashboard') {
-		// 	return false;
-		// }
-
 		// Check for confirmation and veto
 		const veto = await this.handleCloseConfirmation([editor]);
 		if (veto) {
@@ -1704,9 +1698,6 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			return true;
 		}
 
-		// MEMBRANE: we can prevent closing the dashboard tab. See also: editorGroupView.ts
-		// https://github.com/membrane-io/vscode/pull/61/files
-		// const editors = this.doGetEditorsToClose(args).filter(e => e.getTitle() !== 'Dashboard');
 		const editors = this.doGetEditorsToClose(args);
 
 		// Check for confirmation and veto
@@ -1808,9 +1799,6 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		// Close all inactive editors first
 		const editorsToClose: EditorInput[] = [];
 
-		// MEMBRANE: we can prevent closing the dashboard tab. See also: editorGroupView.ts
-		// https://github.com/membrane-io/vscode/pull/61/files
-		// for (const editor of this.model.getEditors(EditorsOrder.SEQUENTIAL, options).filter(e => e.getTitle() !== 'Dashboard')) {
 		for (const editor of this.model.getEditors(EditorsOrder.SEQUENTIAL, options)) {
 			if (!this.isActive(editor)) {
 				this.doCloseInactiveEditor(editor);

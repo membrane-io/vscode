@@ -1024,14 +1024,6 @@ function registerCloseEditorCommands() {
 			}
 
 			if (group) {
-				// MEMBRANE: we can prevent closing the dashboard tab. See also: editorGroupView.ts
-				// https://github.com/membrane-io/vscode/pull/61/files
-				// const dashboard = group.editors.find(e => e.getTitle() === 'Dashboard');
-				// if (dashboard) {
-				// 	group.closeAllEditors(); // Method modified to not close dashboard
-				// 	return;
-				// }
-
 				editorGroupService.removeGroup(group);
 			}
 		}

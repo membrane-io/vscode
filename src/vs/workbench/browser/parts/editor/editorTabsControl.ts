@@ -262,32 +262,12 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				this.updateMembraneActions();
 			}
 		}));
-		// Update when the active editor changes so that we can update the custom dashboard tab/button
-		// (Reverted for now - see more commented out code below in updateMembraneActions)
-		// this.editorActionsToolbarDisposables.add(this.editorService.onDidActiveEditorChange(() => {
-		// 	this.updateMembraneActions();
-		// }));
 		this.updateMembraneActions();
 	}
 
 	// MEMBRANE: see membraneActionsToolbar initialization above
 	private updateMembraneActions() {
 		const membraneActions: IAction[] = [];
-
-		// MEMBRANE: custom tab next to auxiliary bar
-		// Also requires injecting editor service
-		// See all changes in https://github.com/membrane-io/vscode/pull/61/files
-		// We reverted this change because:
-		//   1. split view weirdness
-		//   2. mismatching styles between editor and auxiliary bar tabs
-		//
-		// const isDashboardShowing = this.groupView.activeEditor?.getName() === 'Dashboard';
-		// membraneActions.push(new Separator());
-		// membraneActions.push(new MenuItemAction({
-		// 	id: 'membrane.dashboard.show',
-		// 	title: 'Dashboard',
-		// 	tooltip: isDashboardShowing ? 'Viewing Dashboard' : 'Show Dashboard',
-		// }, undefined, undefined, undefined, this.contextKeyService, this.commandService));
 
 		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
 		if (isAuxBarHidden) {
