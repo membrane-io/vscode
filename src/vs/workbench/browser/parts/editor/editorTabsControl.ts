@@ -266,7 +266,6 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		// Update when the active group changes (i.e. rearranging grid/split view)
 		// because the toprightmost tab may have changed
 		this.editorGroupsService.onDidChangeActiveGroup(() => {
-			console.log('tofu: onDidChangeActiveGroup');
 			this.updateMembraneActions();
 		});
 
