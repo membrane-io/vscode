@@ -42,7 +42,7 @@ import { IEditorResolverService } from 'vs/workbench/services/editor/common/edit
 import { IEditorTitleControlDimensions } from 'vs/workbench/browser/parts/editor/editorTitleControl';
 import { IReadonlyEditorGroupModel } from 'vs/workbench/common/editor/editorGroupModel';
 import { EDITOR_CORE_NAVIGATION_COMMANDS } from 'vs/workbench/browser/parts/editor/editorCommands';
-import { IAuxiliaryEditorPart, MergeGroupMode } from 'vs/workbench/services/editor/common/editorGroupsService';
+import { GroupDirection, IAuxiliaryEditorPart, IEditorGroupsService, MergeGroupMode } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { isMacintosh } from 'vs/base/common/platform';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
@@ -148,7 +148,8 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		@IThemeService themeService: IThemeService,
 		@IEditorResolverService private readonly editorResolverService: IEditorResolverService,
 		@IHostService private readonly hostService: IHostService,
-		// MEMBRANE: inject command service
+		// MEMBRANE: inject editor group service and command service
+		@IEditorGroupsService private readonly editorGroupsService: IEditorGroupsService,
 		@ICommandService private readonly commandService: ICommandService
 	) {
 		super(themeService);
@@ -262,6 +263,13 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				this.updateMembraneActions();
 			}
 		}));
+		// Update when the active group changes (i.e. rearranging grid/split view)
+		// because the toprightmost tab may have changed
+		this.editorGroupsService.onDidChangeActiveGroup(() => {
+			console.log('tofu: onDidChangeActiveGroup');
+			this.updateMembraneActions();
+		});
+
 		this.updateMembraneActions();
 	}
 
@@ -270,7 +278,19 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const membraneActions: IAction[] = [];
 
 		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
-		if (isAuxBarHidden) {
+
+		let groupAbove;
+		let groupRight;
+		let isTopRight;
+		try {
+			// findGroup can throw an error in multiple places when some editor parts are not instantiated
+			groupAbove = this.editorGroupsService.findGroup({ direction: GroupDirection.UP }, this.groupView);
+			groupRight = this.editorGroupsService.findGroup({ direction: GroupDirection.RIGHT }, this.groupView);
+			isTopRight = !groupAbove && !groupRight;
+		} catch (error) {
+		}
+
+		if (isAuxBarHidden && isTopRight) {
 			membraneActions.push(new Separator());
 			membraneActions.push(new MenuItemAction({
 				id: 'workbench.action.toggleAuxiliaryBar',
@@ -278,6 +298,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				icon: Codicon.chevronLeft,
 			}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
 		}
+
 		this.membraneActionsToolbar?.setActions(membraneActions, []);
 	}
 
