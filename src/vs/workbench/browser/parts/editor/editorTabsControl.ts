@@ -26,7 +26,7 @@ import { listActiveSelectionBackground, listActiveSelectionForeground } from 'vs
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { DraggedEditorGroupIdentifier, DraggedEditorIdentifier, fillEditorsDragData, isWindowDraggedOver } from 'vs/workbench/browser/dnd';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
-import { EditorServiceImpl, IEditorGroupsView, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from 'vs/workbench/browser/parts/editor/editor';
+import { IEditorGroupsView, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from 'vs/workbench/browser/parts/editor/editor';
 import { IEditorCommandsContext, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, EditorsOrder, EditorInputCapabilities, IToolbarActions, GroupIdentifier } from 'vs/workbench/common/editor';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { ResourceContextKey, ActiveEditorPinnedContext, ActiveEditorStickyContext, ActiveEditorGroupLockedContext, ActiveEditorCanSplitInGroupContext, SideBySideEditorActiveContext, ActiveEditorFirstInGroupContext, ActiveEditorAvailableEditorIdsContext, applyAvailableEditorIds, ActiveEditorLastInGroupContext } from 'vs/workbench/common/contextkeys';
@@ -54,7 +54,6 @@ import { Separator } from 'vs/base/common/actions';
 import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
 import { Codicon } from 'vs/base/common/codicons';
 import { ICommandService } from 'vs/platform/commands/common/commands';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export class EditorCommandsContextActionRunner extends ActionRunner {
 
@@ -149,9 +148,8 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		@IThemeService themeService: IThemeService,
 		@IEditorResolverService private readonly editorResolverService: IEditorResolverService,
 		@IHostService private readonly hostService: IHostService,
-		// MEMBRANE: inject command and editor services
-		@ICommandService private readonly commandService: ICommandService,
-		@IEditorService protected readonly editorService: EditorServiceImpl,
+		// MEMBRANE: inject command service
+		@ICommandService private readonly commandService: ICommandService
 	) {
 		super(themeService);
 
@@ -264,10 +262,11 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				this.updateMembraneActions();
 			}
 		}));
-		// Update when the active editor changes
-		this.editorActionsToolbarDisposables.add(this.editorService.onDidActiveEditorChange(() => {
-			this.updateMembraneActions();
-		}));
+		// Update when the active editor changes so that we can update the custom dashboard tab/button
+		// (Reverted for now - see more commented out code below in updateMembraneActions)
+		// this.editorActionsToolbarDisposables.add(this.editorService.onDidActiveEditorChange(() => {
+		// 	this.updateMembraneActions();
+		// }));
 		this.updateMembraneActions();
 	}
 
@@ -275,13 +274,20 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 	private updateMembraneActions() {
 		const membraneActions: IAction[] = [];
 
-		const isDashboardShowing = this.groupView.activeEditor?.getName() === 'Dashboard';
-		membraneActions.push(new Separator());
-		membraneActions.push(new MenuItemAction({
-			id: 'membrane.dashboard.show',
-			title: 'Dashboard',
-			tooltip: isDashboardShowing ? 'Viewing Dashboard' : 'Show Dashboard',
-		}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
+		// MEMBRANE: custom tab next to auxiliary bar
+		// Also requires injecting editor service
+		// See all changes in https://github.com/membrane-io/vscode/pull/61/files
+		// We reverted this change because:
+		//   1. split view weirdness
+		//   2. mismatching styles between editor and auxiliary bar tabs
+		//
+		// const isDashboardShowing = this.groupView.activeEditor?.getName() === 'Dashboard';
+		// membraneActions.push(new Separator());
+		// membraneActions.push(new MenuItemAction({
+		// 	id: 'membrane.dashboard.show',
+		// 	title: 'Dashboard',
+		// 	tooltip: isDashboardShowing ? 'Viewing Dashboard' : 'Show Dashboard',
+		// }, undefined, undefined, undefined, this.contextKeyService, this.commandService));
 
 		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
 		if (isAuxBarHidden) {

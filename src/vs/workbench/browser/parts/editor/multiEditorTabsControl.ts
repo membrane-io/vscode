@@ -146,17 +146,15 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 		@INotificationService notificationService: INotificationService,
 		@IQuickInputService quickInputService: IQuickInputService,
 		@IThemeService themeService: IThemeService,
-		// MEMBRANE: added editor service to base class, EditorTabsControl
-		// @IEditorService private readonly editorService: EditorServiceImpl,
+		@IEditorService private readonly editorService: EditorServiceImpl,
 		@IPathService private readonly pathService: IPathService,
 		@ITreeViewsDnDService private readonly treeViewsDragAndDropService: ITreeViewsDnDService,
 		@IEditorResolverService editorResolverService: IEditorResolverService,
 		@IHostService hostService: IHostService,
-		// MEMBRANE: inject services for membrane tab actions bar
-		@ICommandService commandService: ICommandService,
-		@IEditorService editorService: EditorServiceImpl,
+		// MEMBRANE: inject command service for membrane tab actions bar
+		@ICommandService commandService: ICommandService
 	) {
-		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, commandService, editorService);
+		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, commandService);
 
 		// Resolve the correct path library for the OS we are on
 		// If we are connected to remote, this accounts for the
