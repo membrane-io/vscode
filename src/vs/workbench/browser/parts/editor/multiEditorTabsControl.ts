@@ -31,7 +31,7 @@ import { activeContrastBorder, contrastBorder, editorBackground } from 'vs/platf
 import { ResourcesDropHandler, DraggedEditorIdentifier, DraggedEditorGroupIdentifier, extractTreeDropData, isWindowDraggedOver } from 'vs/workbench/browser/dnd';
 import { Color } from 'vs/base/common/color';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-import { MergeGroupMode, IMergeGroupOptions } from 'vs/workbench/services/editor/common/editorGroupsService';
+import { MergeGroupMode, IMergeGroupOptions, IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { addDisposableListener, EventType, EventHelper, Dimension, scheduleAtNextAnimationFrame, findParentWithClass, clearNode, DragAndDropObserver, isMouseEvent, getWindow } from 'vs/base/browser/dom';
 import { localize } from 'vs/nls';
 import { IEditorGroupsView, EditorServiceImpl, IEditorGroupView, IInternalEditorOpenOptions, IEditorPartsView } from 'vs/workbench/browser/parts/editor/editor';
@@ -146,17 +146,16 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 		@INotificationService notificationService: INotificationService,
 		@IQuickInputService quickInputService: IQuickInputService,
 		@IThemeService themeService: IThemeService,
-		// MEMBRANE: added editor service to base class, EditorTabsControl
-		// @IEditorService private readonly editorService: EditorServiceImpl,
+		@IEditorService private readonly editorService: EditorServiceImpl,
 		@IPathService private readonly pathService: IPathService,
 		@ITreeViewsDnDService private readonly treeViewsDragAndDropService: ITreeViewsDnDService,
 		@IEditorResolverService editorResolverService: IEditorResolverService,
 		@IHostService hostService: IHostService,
-		// MEMBRANE: inject services for membrane tab actions bar
-		@ICommandService commandService: ICommandService,
-		@IEditorService editorService: EditorServiceImpl,
+		// MEMBRANE: inject editor groups and command services for membrane tab actions bar
+		@IEditorGroupsService editorGroupsService: IEditorGroupsService,
+		@ICommandService commandService: ICommandService
 	) {
-		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, commandService, editorService);
+		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, editorGroupsService, commandService);
 
 		// Resolve the correct path library for the OS we are on
 		// If we are connected to remote, this accounts for the

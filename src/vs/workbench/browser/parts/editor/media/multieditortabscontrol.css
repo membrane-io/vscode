@@ -104,11 +104,6 @@
 	height: var(--editor-group-tab-height);
 	box-sizing: border-box;
 	padding-left: 10px;
-
-	/* MEMBRANE: always hide dashboard tab */
-	&[title="Dashboard"] {
-		display: none;
-	}
 }
 
 .monaco-workbench .part.editor > .content .editor-group-container > .title > .tabs-and-actions-container.wrapping .tabs-container > .tab:last-child {
@@ -475,7 +470,7 @@
 	display: none;
 }
 
-/* MEMBRANE: editor actions toolbar changes */
+/* MEMBRANE: button to open the aux bar (editor action tab in vscode terminology) */
 .monaco-workbench .actions-container[aria-label="Additional Editor actions"] {
 	.action-item {
 		margin-right: 0px !important;
@@ -490,31 +485,7 @@
 				opacity: 0.25;
 			}
 		}
-	
-		/* Show Dashboard button */
-		&.menu-entry[title="Show Dashboard"], &.menu-entry[title="Viewing Dashboard"] {
-			a {
-				border-radius: 0px;
-				padding-block: 7px;
-				padding-inline: 14px;
-				margin-bottom: 0px;
-				transform: translateY(-1px);
-
-				&:hover {
-					background-color: var(--vscode-button-secondaryHoverBackground);
-				}
-
-				/* Match gaze inactive tab style */
-				&[aria-label="Show Dashboard"] {
-					opacity: 0.75;
-				}
-
-				&[aria-label="Viewing Dashboard"] {
-					background-color: var(--vscode-button-secondaryBackground);
-				}
-			}
-		}
-	
+		
 		/* Positioning of button to open the aux bar so that it matches gaze's */
 		&.menu-entry[title="Show Brane (AI) & Program Info (⌥⌘B)"] {
 			a.codicon-chevron-left {
