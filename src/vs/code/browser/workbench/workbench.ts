@@ -77,7 +77,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 			handler: (cmdArgs) => {
 				const error = new Error(cmdArgs.error.message);
 				error.stack = cmdArgs.error.stack;
-				window.SENTRY_CAPTURE_EXCEPTION(error);
+				(window as any).SENTRY_CAPTURE_EXCEPTION(error);
 			},
 		},
 		{
