@@ -80,7 +80,8 @@ export class Renderer implements IPagedRenderer<IExtension, ITemplateData> {
 		const preReleaseWidget = this.instantiationService.createInstance(PreReleaseBookmarkWidget, append(root, $('.extension-bookmark-container')));
 		const element = append(root, $('.extension-list-item'));
 		const iconContainer = append(element, $('.icon-container'));
-		const icon = append(iconContainer, $<HTMLImageElement>('img.icon', { alt: '' }));
+		// MEMBRNAE: support cross-origin images from open-vsx without CORP header
+		const icon = append(iconContainer, $<HTMLImageElement>('img.icon', { alt: '', crossorigin: true }));
 		const iconRemoteBadgeWidget = this.instantiationService.createInstance(RemoteBadgeWidget, iconContainer, false);
 		const extensionPackBadgeWidget = this.instantiationService.createInstance(ExtensionPackBadgeWidget, iconContainer);
 		const details = append(element, $('.details'));

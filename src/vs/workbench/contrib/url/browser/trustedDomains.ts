@@ -211,6 +211,7 @@ export function readStaticTrustedDomains(accessor: ServicesAccessor): IStaticTru
 		// MEMBRANE: add membrane trusted domains to skip confirmation dialog
 		'https://membrane.io',
 		'https://*.membrane.io',
+		'https://open-vsx.org',
 		...productService.linkProtectionTrustedDomains ?? [],
 		...environmentService.options?.additionalTrustedDomains ?? []
 	];
