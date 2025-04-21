@@ -71,6 +71,15 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 				window.dispatchEvent(new CustomEvent('tour:report-gaze-rect', { detail: cmdArgs }));
 			}
 		},
+		// For extension panels to bubble up errors
+		{
+			id: 'membrane.gazeError',
+			handler: (cmdArgs) => {
+				const error = new Error(cmdArgs.error.message);
+				error.stack = cmdArgs.error.stack;
+				window.SENTRY_CAPTURE_EXCEPTION(error);
+			},
+		},
 		{
 			id: 'membrane.getLaunchParams', handler: () => {
 				// eslint-disable-next-line no-restricted-syntax
