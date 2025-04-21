@@ -73,7 +73,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		},
 		// For extension panels to bubble up errors
 		{
-			id: 'membrane.gazeError',
+			id: 'membrane.reportError',
 			handler: (cmdArgs) => {
 				const error = new Error(cmdArgs.error.message);
 				error.stack = cmdArgs.error.stack;
