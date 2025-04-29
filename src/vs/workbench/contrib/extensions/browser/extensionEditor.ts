@@ -272,7 +272,8 @@ export class ExtensionEditor extends EditorPane {
 		const header = append(root, $('.header'));
 
 		const iconContainer = append(header, $('.icon-container'));
-		const icon = append(iconContainer, $<HTMLImageElement>('img.icon', { draggable: false, alt: '' }));
+		// MEMBRNAE: support cross-origin images from open-vsx without CORP header
+		const icon = append(iconContainer, $<HTMLImageElement>('img.icon', { draggable: false, alt: '', crossorigin: true }));
 		const remoteBadge = this.instantiationService.createInstance(RemoteBadgeWidget, iconContainer, true);
 
 		const details = append(header, $('.details'));
