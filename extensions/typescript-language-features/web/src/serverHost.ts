@@ -73,7 +73,36 @@ function createServerHost(
 	const textEncoder = new TextEncoder();
 
 	return {
-		watchFile: watchManager.watchFile.bind(watchManager),
+		watchFile: (
+			path: string,
+			callback: ts.FileWatcherCallback,
+			pollingInterval?: number,
+			options?: ts.WatchOptions,
+		): ts.FileWatcher => {
+			const wrappedCallback: ts.FileWatcherCallback = (
+				filePath: string,
+				eventKind: ts.FileWatcherEventKind,
+			) => {
+				// MEMBRANE: Ignore package.json created events, removed on typescript@v5.5
+				// https://github.com/microsoft/TypeScript/commit/f3f70df94e120bab69dd766bacd22089347b71c9
+				// only for memfs/ts-nul-authority/{program}/package.json
+				if (
+					filePath.endsWith("package.json") &&
+					/^\/memfs\/ts-nul-authority\/[^/]+\/package\.json$/.test(filePath) &&
+					eventKind === ts.FileWatcherEventKind.Created
+				) {
+					return;
+				}
+				callback(filePath, eventKind);
+			};
+
+			return watchManager.watchFile(
+				path,
+				wrappedCallback,
+				pollingInterval,
+				options,
+			);
+		},
 		watchDirectory: watchManager.watchDirectory.bind(watchManager),
 		setTimeout(callback: (...args: unknown[]) => void, ms: number, ...args: unknown[]): unknown {
 			return setTimeout(callback, ms, ...args);
