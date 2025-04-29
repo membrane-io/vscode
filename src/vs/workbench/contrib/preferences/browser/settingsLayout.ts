@@ -14,8 +14,10 @@ export interface ITOCEntry<T> {
 	settings?: Array<T>;
 }
 
+// MEMBRANE customize commonly used settings (first section in settings editor)
 const defaultCommonlyUsedSettings: string[] = [
-	'files.autoSave',
+	'membrane.deployOnSave',
+	'membrane.autoShowPanels',
 	'editor.fontSize',
 	'editor.fontFamily',
 	'editor.tabSize',
@@ -24,9 +26,6 @@ const defaultCommonlyUsedSettings: string[] = [
 	'editor.multiCursorModifier',
 	'editor.insertSpaces',
 	'editor.wordWrap',
-	'files.exclude',
-	'files.associations',
-	'workbench.editor.enablePreview'
 ];
 
 export function getCommonlyUsedData(toggleData: ExtensionToggleData | undefined): ITOCEntry<string> {

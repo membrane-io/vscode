@@ -1317,7 +1317,8 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 			case 'long':
 				return { verbosity: Verbosity.LONG, shortenDuplicates: false };
 			default:
-				return { verbosity: Verbosity.MEDIUM, shortenDuplicates: true };
+				// MEMBRANE: don't shorten titles because sometimes it's hard to know which index.ts is open
+				return { verbosity: Verbosity.MEDIUM, shortenDuplicates: false };
 		}
 	}
 
