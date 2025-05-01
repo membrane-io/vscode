@@ -38,6 +38,8 @@ export default class TypeScriptImplementationsCodeLensProvider extends TypeScrip
 	): Promise<vscode.CodeLens> {
 		const args = typeConverters.Position.toFileLocationRequestArgs(codeLens.file, codeLens.range.start);
 		const response = await this.client.execute('implementation', args, token, {
+			// MEMBRANE
+			// lowPriority: false,
 			lowPriority: true,
 			executionTarget: ExecutionTarget.Semantic,
 			cancelOnResourceChange: codeLens.document,

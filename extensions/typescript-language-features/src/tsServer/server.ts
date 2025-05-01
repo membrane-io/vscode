@@ -310,6 +310,11 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 		command: string,
 		lowPriority?: boolean
 	): RequestQueueingType {
+		// console.log('tofu getQueueingType', command, lowPriority);
+		// if (command.includes('geterr')) {
+		// 	debugger;
+		// }
+
 		if (SingleTsServer.fenceCommands.has(command)) {
 			return RequestQueueingType.Fence;
 		}

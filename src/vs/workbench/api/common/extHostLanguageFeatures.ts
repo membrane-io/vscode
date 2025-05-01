@@ -119,6 +119,7 @@ class CodeLensAdapter {
 	async provideCodeLenses(resource: URI, token: CancellationToken): Promise<extHostProtocol.ICodeLensListDto | undefined> {
 		const doc = this._documents.getDocument(resource);
 
+		// TOFU: This is where the membrane extension codelens provider is called
 		const lenses = await this._provider.provideCodeLenses(doc, token);
 		if (!lenses || token.isCancellationRequested) {
 			return undefined;

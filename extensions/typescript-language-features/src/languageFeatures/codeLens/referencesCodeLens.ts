@@ -35,6 +35,8 @@ export class TypeScriptReferencesCodeLensProvider extends TypeScriptBaseCodeLens
 	public async resolveCodeLens(codeLens: ReferencesCodeLens, token: vscode.CancellationToken): Promise<vscode.CodeLens> {
 		const args = typeConverters.Position.toFileLocationRequestArgs(codeLens.file, codeLens.range.start);
 		const response = await this.client.execute('references', args, token, {
+			// MEMBRANE
+			// lowPriority: false,
 			lowPriority: true,
 			executionTarget: ExecutionTarget.Semantic,
 			cancelOnResourceChange: codeLens.document,

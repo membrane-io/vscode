@@ -99,6 +99,7 @@ export function createTypeScriptBuilder(config: IConfiguration, projectFile: str
 					if (!host.getScriptSnapshot(fileName, false)) {
 						resolve([]); // no script, no problems
 					} else {
+						console.log('tofu checkSemanticsSoon', Date.now());
 						resolve(service.getSemanticDiagnostics(fileName));
 					}
 				});

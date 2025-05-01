@@ -528,6 +528,7 @@ export default class BufferSyncSupport extends Disposable {
 			for (const { document } of e) {
 				const syncedBuffer = this.syncedBuffers.get(document.uri);
 				if (syncedBuffer) {
+					// This fires on load
 					this.requestDiagnostic(syncedBuffer);
 				}
 			}
@@ -600,6 +601,7 @@ export default class BufferSyncSupport extends Disposable {
 		const syncedBuffer = new SyncedBuffer(document, filepath, this.client, this.synchronizer);
 		this.syncedBuffers.set(resource, syncedBuffer);
 		syncedBuffer.open();
+		// This fires on load
 		this.requestDiagnostic(syncedBuffer);
 		return true;
 	}
@@ -684,7 +686,7 @@ export default class BufferSyncSupport extends Disposable {
 	}
 
 	private triggerDiagnostics(delay: number = 200) {
-		/// MEMBRNAE: make intellisense and ts-plugin respond faster by reducing the artificial delay.
+		/// MEMBRANE: make intellisense and ts-plugin respond faster by reducing the artificial delay.
 		delay = 50;
 		this.diagnosticDelayer.trigger(() => {
 			this.sendPendingDiagnostics();
@@ -692,6 +694,8 @@ export default class BufferSyncSupport extends Disposable {
 	}
 
 	private requestDiagnostic(buffer: SyncedBuffer): boolean {
+		console.log('tofu requestDiagnostic', Date.now());
+
 		if (!this.shouldValidate(buffer)) {
 			return false;
 		}

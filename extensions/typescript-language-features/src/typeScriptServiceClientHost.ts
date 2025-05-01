@@ -153,6 +153,8 @@ export default class TypeScriptServiceClientHost extends Disposable {
 		});
 
 		this.client.onTsServerStarted(() => {
+			// Does this fire on load?
+			// Not based on the breakpoint I set in the browser
 			this.triggerAllDiagnostics();
 		});
 
