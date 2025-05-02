@@ -81,6 +81,16 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 			},
 		},
 		{
+			id: 'membrane.reportIssue',
+			handler: (cmdArgs) => {
+				(window as any).SENTRY_REPORT_ISSUE({
+					source: cmdArgs.source,
+					message: cmdArgs.message,
+					context: cmdArgs.context
+				});
+			},
+		},
+		{
 			id: 'membrane.getLaunchParams', handler: () => {
 				// eslint-disable-next-line no-restricted-syntax
 				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
