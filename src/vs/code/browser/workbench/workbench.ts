@@ -57,6 +57,16 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		// Used to refresh the page from the extension when a new version of the IDE is known to exist.
 		{ id: 'membrane.refreshPage', handler: () => window.location.reload() },
 		{
+			id: 'membrane.reportIssue',
+			handler: (cmdArgs) => {
+				(window as any).SENTRY_REPORT_ISSUE({
+					source: cmdArgs.source,
+					message: cmdArgs.message,
+					context: cmdArgs.context
+				});
+			},
+		},
+		{
 			id: 'membrane.getLaunchParams', handler: () => {
 				// eslint-disable-next-line no-restricted-syntax
 				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
