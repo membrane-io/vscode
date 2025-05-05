@@ -268,6 +268,10 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		this.editorGroupsService.onDidChangeActiveGroup(() => {
 			this.updateMembraneActions();
 		});
+		// Update when a file is opened
+		this.editorGroupsService.onDidActivateGroup(() => {
+			this.updateMembraneActions();
+		});
 
 		this.updateMembraneActions();
 	}
