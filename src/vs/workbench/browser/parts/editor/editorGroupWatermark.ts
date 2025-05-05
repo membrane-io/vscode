@@ -102,7 +102,6 @@ export class EditorGroupWatermark extends Disposable {
 		}, renderIcon(Codicon.chevronLeft));
 		this._register(this.contextKeyService.onDidChangeContext(e => {
 			if (e.affectsSome(new Set([AuxiliaryBarVisibleContext.key, MultipleEditorGroupsContext.key]))) {
-				console.log('tofu contextKeyService.onDidChangeContext', e);
 				const isAuxBarVisible = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext);
 				const hasMultipleEditorGroups = this.contextKeyService.contextMatchesRules(MultipleEditorGroupsContext);
 				toggleButton.setAttribute('data-hide', (isAuxBarVisible || hasMultipleEditorGroups).toString());
