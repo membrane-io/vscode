@@ -11,7 +11,12 @@ import { IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { append, clearNode, $, h } from 'vs/base/browser/dom';
 import { KeybindingLabel } from 'vs/base/browser/ui/keybindingLabel/keybindingLabel';
-import { CommandsRegistry } from 'vs/platform/commands/common/commands';
+// MEMBRANE: add aux bar toggle icon button
+import { AuxiliaryBarVisibleContext, MultipleEditorGroupsContext } from 'vs/workbench/common/contextkeys';
+import { Codicon } from 'vs/base/common/codicons';
+import { CommandsRegistry, ICommandService } from 'vs/platform/commands/common/commands';
+import { renderIcon } from 'vs/base/browser/ui/iconLabel/iconLabels';
+// MEMBRANE: rm watermark hotkeys
 // import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ContextKeyExpression, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { defaultKeybindingLabelStyles } from 'vs/platform/theme/browser/defaultStyles';
@@ -71,7 +76,8 @@ export class EditorGroupWatermark extends Disposable {
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 
@@ -79,6 +85,29 @@ export class EditorGroupWatermark extends Disposable {
 			h('.letterpress'),
 			h('.shortcuts@shortcuts'),
 		]);
+
+		// MEMBRANE: show aux bar toggle button
+		// 1. IF the aux bar is not visible
+		// 2. AND there are not multiple open editor groups
+		//		    (when there are multiple open editor groups, there can be a watermark empty editor in some cases)
+		//		    (and in that^ case, the watermark has an x icon to close it)
+		//		    (and the other open editors will handle aux bar toggle button via the editor tab bar actions)
+		// See also: editorTabsControl.ts
+		const hasMultipleEditorGroups = this.contextKeyService.contextMatchesRules(MultipleEditorGroupsContext);
+		const isAuxBarVisible = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext);
+		const toggleButton = $('.toggle-aux-bar', {
+			title: 'Show Brane (AI) & Program Info',
+			onclick: () => this.commandService.executeCommand('workbench.action.toggleAuxiliaryBar'),
+			['data-hide']: isAuxBarVisible || hasMultipleEditorGroups,
+		}, renderIcon(Codicon.chevronLeft));
+		this._register(this.contextKeyService.onDidChangeContext(e => {
+			if (e.affectsSome(new Set([AuxiliaryBarVisibleContext.key, MultipleEditorGroupsContext.key]))) {
+				const isAuxBarVisible = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext);
+				const hasMultipleEditorGroups = this.contextKeyService.contextMatchesRules(MultipleEditorGroupsContext);
+				toggleButton.setAttribute('data-hide', (isAuxBarVisible || hasMultipleEditorGroups).toString());
+			}
+		}));
+		append(elements.root, toggleButton);
 
 		append(container, elements.root);
 		this.shortcuts = elements.shortcuts;

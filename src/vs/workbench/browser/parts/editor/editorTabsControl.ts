@@ -242,7 +242,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 			}
 		}));
 
-		// MEMBRANE: Additional toolbar items that appear to the right of the "..." overflow menu. This is basically a copy
+		// MEMBRANE: Additional toolbar items that appear in the top right of the editor. This is basically a copy
 		// of the above code for editorActionsToolbar but using MembraneEditorTitle instead of EditorTitle.
 		this.membraneActionsToolbar = this.editorActionsToolbarDisposables.add(this.instantiationService.createInstance(WorkbenchToolBar, container, {
 			actionViewItemProvider: action => this.actionViewItemProvider(action),
@@ -266,6 +266,10 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		// Update when the active group changes (i.e. rearranging grid/split view)
 		// because the toprightmost tab may have changed
 		this.editorGroupsService.onDidChangeActiveGroup(() => {
+			this.updateMembraneActions();
+		});
+		// Update when a file is opened
+		this.editorGroupsService.onDidActivateGroup(() => {
 			this.updateMembraneActions();
 		});
 
