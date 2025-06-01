@@ -258,20 +258,21 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 			}
 		}));
 		// Update when the auxiliary bar is opened/closed
-		this.editorActionsToolbarDisposables.add(this.contextKeyService.onDidChangeContext((e) => {
+
+		this.editorActionsToolbarDisposables.add(this.getEditorPaneAwareContextKeyService().onDidChangeContext((e) => {
 			if (e.affectsSome(new Set([AuxiliaryBarVisibleContext.key]))) {
 				this.updateMembraneActions();
 			}
 		}));
 		// Update when the active group changes (i.e. rearranging grid/split view)
 		// because the toprightmost tab may have changed
-		this.editorGroupsService.onDidChangeActiveGroup(() => {
+		this.editorActionsToolbarDisposables.add(this.editorGroupsService.onDidChangeActiveGroup(() => {
 			this.updateMembraneActions();
-		});
+		}));
 		// Update when a file is opened
-		this.editorGroupsService.onDidActivateGroup(() => {
+		this.editorActionsToolbarDisposables.add(this.editorGroupsService.onDidActivateGroup(() => {
 			this.updateMembraneActions();
-		});
+		}));
 
 		this.updateMembraneActions();
 	}
@@ -280,7 +281,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 	private updateMembraneActions() {
 		const membraneActions: IAction[] = [];
 
-		const isAuxBarHidden = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
+		const isAuxBarHidden = this.getEditorPaneAwareContextKeyService().contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
 
 		let groupAbove;
 		let groupRight;
@@ -299,7 +300,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				id: 'workbench.action.toggleAuxiliaryBar',
 				title: 'Show Brane (AI) & Program Info',
 				icon: Codicon.chevronLeft,
-			}, undefined, undefined, undefined, this.contextKeyService, this.commandService));
+			}, undefined, undefined, undefined, this.getEditorPaneAwareContextKeyService(), this.commandService));
 		}
 
 		this.membraneActionsToolbar?.setActions(membraneActions, []);
