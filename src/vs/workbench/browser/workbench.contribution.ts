@@ -796,7 +796,8 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 			},
 			'zenMode.restore': {
 				'type': 'boolean',
-				'default': true,
+				// MEMBRANE: prevent tabs disappear.
+				'default': false,
 				'description': localize('zenMode.restore', "Controls whether a window should restore to Zen Mode if it was exited in Zen Mode.")
 			},
 			'zenMode.silentNotifications': {
