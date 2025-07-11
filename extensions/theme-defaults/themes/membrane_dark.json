@@ -3,6 +3,7 @@
 	"name": "Membrane Dark",
 	"include": "./dark_modern.json",
 	"colors": {
+		"sash.hoverBorder": "#808080",
 		"editorCodeLens.foreground": "#845bff"
 	},
 	"tokenColors": [

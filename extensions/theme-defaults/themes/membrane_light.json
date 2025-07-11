@@ -3,6 +3,7 @@
 	"name": "Membrane Light",
 	"include": "./light_modern.json",
 	"colors": {
+		"sash.hoverBorder": "#999",
 		"diffEditor.unchangedRegionBackground": "#efefef",
 		"activityBar.activeBorder": "#3c3c3c",
 		"activityBar.background": "#ddd",
