@@ -404,7 +404,7 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		backToNavigator.setAttribute('aria-label', 'Back to Membrane Navigator');
 		backToNavigator.setAttribute('role', 'button');
 		backToNavigator.onclick = () => {
-			this.commandService.executeCommand('membrane.navigator.focus');
+			this.commandService.executeCommand('membrane.main.focus');
 		};
 
 		titleArea.prepend(backToNavigator);
