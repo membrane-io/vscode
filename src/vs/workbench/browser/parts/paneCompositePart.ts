@@ -21,6 +21,7 @@ import { INotificationService } from '../../../platform/notification/common/noti
 import { IStorageService } from '../../../platform/storage/common/storage.js';
 import { IContextMenuService } from '../../../platform/contextview/browser/contextView.js';
 import { IKeybindingService } from '../../../platform/keybinding/common/keybinding.js';
+import { ICommandService } from '../../../platform/commands/common/commands.js';
 import { IThemeService } from '../../../platform/theme/common/themeService.js';
 import { IContextKey, IContextKeyService } from '../../../platform/contextkey/common/contextkey.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
@@ -150,6 +151,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		@IHoverService hoverService: IHoverService,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IThemeService themeService: IThemeService,
+		@ICommandService commandService: ICommandService,
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
 		@IExtensionService private readonly extensionService: IExtensionService,
@@ -177,6 +179,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			instantiationService,
 			themeService,
 			Registry.as<PaneCompositeRegistry>(registryId),
+			commandService,
 			activePaneCompositeSettingsKey,
 			viewDescriptorService.getDefaultViewContainer(location)?.id || '',
 			nameForTelemetry,

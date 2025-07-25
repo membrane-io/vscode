@@ -10,8 +10,17 @@ import {
 	IWorkspace,
 	// IWorkspaceProvider,
 } from '../../../workbench/browser/web.api.js';
+import { mainWindow } from '../../../base/browser/window.js';
 import { SecretStorageProvider } from '../workbench/membrane.js';
-declare const window: Window & { product?: Writeable<IWorkbenchConstructionOptions> };
+declare const window: Window & {
+	product?: Writeable<IWorkbenchConstructionOptions>;
+	SENTRY_REPORT_ISSUE?: (params: {
+		source?: string;
+		message?: string;
+		context?: unknown;
+	}) => void;
+	vscodeTargetContainer?: HTMLElement | null;
+};
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 (async function () {
@@ -58,8 +67,9 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{ id: 'membrane.refreshPage', handler: () => window.location.reload() },
 		{
 			id: 'membrane.reportIssue',
-			handler: (cmdArgs) => {
-				(window as any).SENTRY_REPORT_ISSUE({
+			handler: (...args: unknown[]) => {
+				const cmdArgs = args[0] as { source?: string; message?: string; context?: unknown };
+				window.SENTRY_REPORT_ISSUE?.({
 					source: cmdArgs.source,
 					message: cmdArgs.message,
 					context: cmdArgs.context
@@ -67,14 +77,70 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 			},
 		},
 		{
-			id: 'membrane.getLaunchParams', handler: () => {
+			id: 'membrane.extensionToGaze',
+			handler: (response) => {
+				console.log('Workbench: Extension to Next.js:', response);
+				window.dispatchEvent(
+					new CustomEvent('extensionToGaze', {
+						detail: response,
+					}),
+				);
+				return true;
+			},
+		},
+		{
+			id: 'membrane.getLaunchParams',
+			handler: () => {
+				// Reading from existing HTML meta tag created outside of workbench
 				// eslint-disable-next-line no-restricted-syntax
-				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
-				return meta?.content ?? '';
-			}
-		}];
+				const metas = mainWindow.document.getElementsByTagName('meta');
+				for (let i = 0; i < metas.length; i++) {
+					const meta = metas[i];
+					if (meta.name === 'membrane-launch-params') {
+						return meta.content ?? '';
+					}
+				}
+				return '';
+			},
+		},
+	];
 
-	// eslint-disable-next-line no-restricted-syntax
-	const domElement = document.body;
+	// config.homeIndicator = {
+	// 	href: window.location.origin,
+	// 	icon: 'home',
+	// 	title: 'Membrane Home',
+	// };
+
+	window.addEventListener('gazeToExtension', async (event: Event) => {
+		const customEvent = event as CustomEvent;
+		console.log('Workbench: Event received:', customEvent.detail);
+
+		try {
+			// Use VSCode's built-in command service
+			const { ICommandService } = await import(
+				'../../../platform/commands/common/commands.js'
+			);
+			const { StandaloneServices } = await import(
+				'../../../editor/standalone/browser/standaloneServices.js'
+			);
+
+			const commandService = StandaloneServices.get(ICommandService);
+			if (commandService) {
+				await commandService.executeCommand(
+					'membrane.gazeToExtension',
+					customEvent.detail,
+				);
+				console.log('Workbench: Command executed successfully');
+			} else {
+				console.error('Command service not available');
+			}
+		} catch (error) {
+			console.error('Failed to execute command:', error);
+		}
+	});
+
+	console.log('Workbench: Setup complete');
+
+	const domElement = window.vscodeTargetContainer || mainWindow.document.body;
 	create(domElement, config);
 })();

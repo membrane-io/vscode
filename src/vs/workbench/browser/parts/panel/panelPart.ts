@@ -78,7 +78,7 @@ export class PanelPart extends AbstractPaneCompositePart {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
-		@ICommandService private commandService: ICommandService,
+		@ICommandService protected override commandService: ICommandService,
 		@IMenuService menuService: IMenuService,
 		@IConfigurationService private configurationService: IConfigurationService
 	) {
@@ -100,6 +100,7 @@ export class PanelPart extends AbstractPaneCompositePart {
 			hoverService,
 			instantiationService,
 			themeService,
+			commandService,
 			viewDescriptorService,
 			contextKeyService,
 			extensionService,

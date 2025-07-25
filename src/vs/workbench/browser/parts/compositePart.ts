@@ -36,6 +36,8 @@ import { IBaseActionViewItemOptions } from '../../../base/browser/ui/actionbar/a
 import { IHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegate.js';
 import { createInstantHoverDelegate, getDefaultHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import type { IHoverService } from '../../../platform/hover/browser/hover.js';
+import { ICommandService } from '../../../platform/commands/common/commands.js';
+
 
 export interface ICompositeTitleLabel {
 
@@ -92,6 +94,8 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		protected readonly instantiationService: IInstantiationService,
 		themeService: IThemeService,
 		protected readonly registry: CompositeRegistry<T>,
+		// MEMBRANE: include command service, instantiated in SidebarPart for back to Navigator button
+		protected readonly commandService: ICommandService,
 		private readonly activeCompositeSettingsKey: string,
 		private readonly defaultCompositeId: string,
 		protected readonly nameForTelemetry: string,
@@ -404,6 +408,23 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		// Title Area Container
 		const titleArea = append(parent, $('.composite'));
 		titleArea.classList.add('title');
+
+		// MEMBRANE: hide title area for Navigator and Logs
+		// We add it back for other parts in compositepart.css
+		titleArea.style.display = 'none';
+		titleArea.style.height = '0px';
+
+		// MEMBRANE: back to Navigator button
+		const backToNavigator = document.createElement('a');
+		backToNavigator.classList.add('back-to-membrane-navigator', 'codicon', 'codicon-x', 'action-item', 'action-label');
+		backToNavigator.setAttribute('title', 'Back to Membrane Navigator');
+		backToNavigator.setAttribute('aria-label', 'Back to Membrane Navigator');
+		backToNavigator.setAttribute('role', 'button');
+		backToNavigator.onclick = () => {
+			this.commandService.executeCommand('membrane.main.focus');
+		};
+
+		titleArea.prepend(backToNavigator);
 
 		// Left Title Label
 		this.titleLabel = this.createTitleLabel(titleArea);

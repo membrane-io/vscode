@@ -10,6 +10,7 @@ import { SidebarFocusContext, ActiveViewletContext } from '../../../common/conte
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { contrastBorder } from '../../../../platform/theme/common/colorRegistry.js';
@@ -75,6 +76,7 @@ export class SidebarPart extends AbstractPaneCompositePart {
 		@IHoverService hoverService: IHoverService,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IThemeService themeService: IThemeService,
+		@ICommandService commandService: ICommandService,
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
@@ -99,6 +101,7 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			hoverService,
 			instantiationService,
 			themeService,
+			commandService,
 			viewDescriptorService,
 			contextKeyService,
 			extensionService,
