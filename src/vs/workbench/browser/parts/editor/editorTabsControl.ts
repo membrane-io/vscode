@@ -234,6 +234,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		}));
 	}
 
+
 	private actionViewItemProvider(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {
 		const activeEditorPane = this.groupView.activeEditorPane;
 
