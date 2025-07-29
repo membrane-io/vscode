@@ -277,31 +277,31 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		this.updateMembraneActions();
 	}
 
-	// MEMBRANE: see membraneActionsToolbar initialization above
+	// MEMBRANE: see membraneActionsToolbar initialization above (unused after moving gaze to /ide)
 	private updateMembraneActions() {
 		const membraneActions: IAction[] = [];
 
-		const isAuxBarHidden = this.getEditorPaneAwareContextKeyService().contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
+		// const isAuxBarHidden = this.getEditorPaneAwareContextKeyService().contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
 
-		let groupAbove;
-		let groupRight;
-		let isTopRight;
-		try {
-			// findGroup can throw an error in multiple places when some editor parts are not instantiated
-			groupAbove = this.editorGroupsService.findGroup({ direction: GroupDirection.UP }, this.groupView);
-			groupRight = this.editorGroupsService.findGroup({ direction: GroupDirection.RIGHT }, this.groupView);
-			isTopRight = !groupAbove && !groupRight;
-		} catch (error) {
-		}
+		// let groupAbove;
+		// let groupRight;
+		// let isTopRight;
+		// try {
+		// 	// findGroup can throw an error in multiple places when some editor parts are not instantiated
+		// 	groupAbove = this.editorGroupsService.findGroup({ direction: GroupDirection.UP }, this.groupView);
+		// 	groupRight = this.editorGroupsService.findGroup({ direction: GroupDirection.RIGHT }, this.groupView);
+		// 	isTopRight = !groupAbove && !groupRight;
+		// } catch (error) {
+		// }
 
-		if (isAuxBarHidden && isTopRight) {
-			membraneActions.push(new Separator());
-			membraneActions.push(new MenuItemAction({
-				id: 'workbench.action.toggleAuxiliaryBar',
-				title: 'Show Brane (AI) & Program Info',
-				icon: Codicon.chevronLeft,
-			}, undefined, undefined, undefined, this.getEditorPaneAwareContextKeyService(), this.commandService));
-		}
+		// if (isAuxBarHidden && isTopRight) {
+		// 	membraneActions.push(new Separator());
+		// 	membraneActions.push(new MenuItemAction({
+		// 		id: 'workbench.action.toggleAuxiliaryBar',
+		// 		title: 'Show Brane (AI) & Program Info',
+		// 		icon: Codicon.chevronLeft,
+		// 	}, undefined, undefined, undefined, this.getEditorPaneAwareContextKeyService(), this.commandService));
+		// }
 
 		this.membraneActionsToolbar?.setActions(membraneActions, []);
 	}
