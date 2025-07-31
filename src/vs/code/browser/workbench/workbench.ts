@@ -20,6 +20,8 @@ declare const window: Window & {
 		context?: unknown;
 	}) => void;
 	vscodeTargetContainer?: HTMLElement | null;
+	completeInitialization?: () => void;
+	SENTRY_CAPTURE_EXCEPTION?: (error: Error) => void;
 };
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -65,6 +67,47 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	config.commands = [
 		// Used to refresh the page from the extension when a new version of the IDE is known to exist.
 		{ id: 'membrane.refreshPage', handler: () => window.location.reload() },
+		// Invoked when the navigator finishes loading
+		{
+			id: 'membrane.completeInitialization', handler: () => window.completeInitialization?.()
+		},
+		// For product tour, emit an event to advance to the next step
+		{
+			id: 'membrane.advanceTour', handler: (...args: unknown[]) => {
+				const cmdArgs = args[0] as { trigger: string };
+				window.dispatchEvent(new Event(`tour:${cmdArgs.trigger}`));
+			}
+		},
+		// For product tour, send coordinates of gaze rects to the web app
+		{
+			id: 'membrane.reportGazeRect', handler: (...args: unknown[]) => {
+				// cmdArgs { gaze_instance, rect_id, x, y, width, height }
+				const cmdArgs = args[0] as { gaze_instance: string; rect_id: string; x: number; y: number; width: number; height: number };
+				window.dispatchEvent(
+					new CustomEvent('gaze:report-rect', { detail: cmdArgs }),
+				);
+			},
+		},
+		{
+			id: 'membrane.reportOverlayRects',
+			handler: (...args: unknown[]) => {
+				// cmdArgs { gaze_instance, overlay_id, rects_json }
+				const cmdArgs = args[0] as { gaze_instance: string; overlay_id: string; rects_json: string };
+				window.dispatchEvent(
+					new CustomEvent('gaze:report-overlay-rects', { detail: cmdArgs }),
+				);
+			},
+		},
+		// For extension panels to bubble up errors
+		{
+			id: 'membrane.reportError',
+			handler: (...args: unknown[]) => {
+				const cmdArgs = args[0] as { error: { message: string; stack?: string } };
+				const error = new Error(cmdArgs.error.message);
+				error.stack = cmdArgs.error.stack;
+				window.SENTRY_CAPTURE_EXCEPTION?.(error);
+			},
+		},
 		{
 			id: 'membrane.reportIssue',
 			handler: (...args: unknown[]) => {
