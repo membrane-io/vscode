@@ -42,18 +42,18 @@ import { IEditorResolverService } from 'vs/workbench/services/editor/common/edit
 import { IEditorTitleControlDimensions } from 'vs/workbench/browser/parts/editor/editorTitleControl';
 import { IReadonlyEditorGroupModel } from 'vs/workbench/common/editor/editorGroupModel';
 import { EDITOR_CORE_NAVIGATION_COMMANDS } from 'vs/workbench/browser/parts/editor/editorCommands';
-import { GroupDirection, IAuxiliaryEditorPart, IEditorGroupsService, MergeGroupMode } from 'vs/workbench/services/editor/common/editorGroupsService';
+import { IAuxiliaryEditorPart, IEditorGroupsService, MergeGroupMode } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { isMacintosh } from 'vs/base/common/platform';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 
 // MEMBRANE: see membraneActionsToolbar initialization below
 /* eslint-disable no-duplicate-imports */
-import { MenuItemAction } from 'vs/platform/actions/common/actions';
-import { Separator } from 'vs/base/common/actions';
+// import { MenuItemAction } from 'vs/platform/actions/common/actions';
+// import { Separator } from 'vs/base/common/actions';
 import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
-import { Codicon } from 'vs/base/common/codicons';
-import { ICommandService } from 'vs/platform/commands/common/commands';
+// import { Codicon } from 'vs/base/common/codicons';
+// import { ICommandService } from 'vs/platform/commands/common/commands';
 
 export class EditorCommandsContextActionRunner extends ActionRunner {
 
@@ -150,7 +150,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		@IHostService private readonly hostService: IHostService,
 		// MEMBRANE: inject editor group service and command service
 		@IEditorGroupsService private readonly editorGroupsService: IEditorGroupsService,
-		@ICommandService private readonly commandService: ICommandService
+		// @ICommandService private readonly commandService: ICommandService
 	) {
 		super(themeService);
 

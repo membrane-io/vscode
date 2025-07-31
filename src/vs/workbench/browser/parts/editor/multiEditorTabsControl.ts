@@ -56,7 +56,7 @@ import { IEditorTitleControlDimensions } from 'vs/workbench/browser/parts/editor
 import { StickyEditorGroupModel, UnstickyEditorGroupModel } from 'vs/workbench/common/editor/filteredEditorGroupModel';
 import { IReadonlyEditorGroupModel } from 'vs/workbench/common/editor/editorGroupModel';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
-import { ICommandService } from 'vs/platform/commands/common/commands';
+// import { ICommandService } from 'vs/platform/commands/common/commands';
 
 interface IEditorInputLabel {
 	readonly editor: EditorInput;
@@ -153,9 +153,9 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 		@IHostService hostService: IHostService,
 		// MEMBRANE: inject editor groups and command services for membrane tab actions bar
 		@IEditorGroupsService editorGroupsService: IEditorGroupsService,
-		@ICommandService commandService: ICommandService
+		// @ICommandService commandService: ICommandService
 	) {
-		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, editorGroupsService, commandService);
+		super(parent, editorPartsView, groupsView, groupView, tabsModel, contextMenuService, instantiationService, contextKeyService, keybindingService, notificationService, quickInputService, themeService, editorResolverService, hostService, editorGroupsService);
 
 		// Resolve the correct path library for the OS we are on
 		// If we are connected to remote, this accounts for the
