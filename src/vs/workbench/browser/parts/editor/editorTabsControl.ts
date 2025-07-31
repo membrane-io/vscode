@@ -39,7 +39,7 @@ import { IEditorResolverService } from '../../../services/editor/common/editorRe
 import { IEditorTitleControlDimensions } from './editorTitleControl.js';
 import { IReadonlyEditorGroupModel } from '../../../common/editor/editorGroupModel.js';
 import { EDITOR_CORE_NAVIGATION_COMMANDS } from './editorCommands.js';
-import { IAuxiliaryEditorPart, MergeGroupMode } from '../../../services/editor/common/editorGroupsService.js';
+import { IAuxiliaryEditorPart, IEditorGroupsService, MergeGroupMode } from '../../../services/editor/common/editorGroupsService.js';
 import { isMacintosh } from '../../../../base/common/platform.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
@@ -48,6 +48,12 @@ import { MarkdownString } from '../../../../base/common/htmlContent.js';
 import { IManagedHoverTooltipMarkdownString } from '../../../../base/browser/ui/hover/hover.js';
 import { applyDragImage } from '../../../../base/browser/ui/dnd/dnd.js';
 
+// MEMBRANE: see membraneActionsToolbar initialization below
+// import { MenuItemAction } from 'vs/platform/actions/common/actions';
+// import { Separator } from 'vs/base/common/actions';
+// import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
+// import { Codicon } from 'vs/base/common/codicons';
+// import { ICommandService } from 'vs/platform/commands/common/commands';
 export class EditorCommandsContextActionRunner extends ActionRunner {
 
 	constructor(
@@ -140,8 +146,14 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		@IThemeService themeService: IThemeService,
 		@IEditorResolverService private readonly editorResolverService: IEditorResolverService,
 		@IHostService private readonly hostService: IHostService,
+		// MEMBRANE: inject editor group service and command service
+		@IEditorGroupsService private readonly editorGroupsService: IEditorGroupsService,
+		// @ICommandService private readonly commandService: ICommandService
 	) {
 		super(themeService);
+
+		// MEMBRANE: editorGroupsService is injected for future use
+		void this.editorGroupsService;
 
 		this.renderDropdownAsChildElement = false;
 
