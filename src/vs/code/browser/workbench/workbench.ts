@@ -68,8 +68,19 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{
 			id: 'membrane.reportGazeRect', handler: (cmdArgs) => {
 				// cmdArgs { gaze_instance, rect_id, x, y, width, height }
-				window.dispatchEvent(new CustomEvent('tour:report-gaze-rect', { detail: cmdArgs }));
-			}
+				window.dispatchEvent(
+					new CustomEvent('gaze:report-rect', { detail: cmdArgs }),
+				);
+			},
+		},
+		{
+			id: 'membrane.reportOverlayRects',
+			handler: (cmdArgs) => {
+				// cmdArgs { gaze_instance, overlay_id, rects_json }
+				window.dispatchEvent(
+					new CustomEvent('gaze:report-overlay-rects', { detail: cmdArgs }),
+				);
+			},
 		},
 		// For extension panels to bubble up errors
 		{
