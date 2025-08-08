@@ -7,24 +7,23 @@ import { MarkdownString } from '../../../base/common/htmlContent.js';
 import { IJSONSchema } from '../../../base/common/jsonSchema.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import * as resources from '../../../base/common/resources.js';
-// import { isFalsyOrWhitespace } from '../../../base/common/strings.js';
+import { isFalsyOrWhitespace } from '../../../base/common/strings.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { URI } from '../../../base/common/uri.js';
 import { localize } from '../../../nls.js';
 import { ContextKeyExpr } from '../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier, ExtensionIdentifierSet, IExtensionManifest } from '../../../platform/extensions/common/extensions.js';
-// import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
 import { SyncDescriptor } from '../../../platform/instantiation/common/descriptors.js';
 import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../platform/log/common/log.js';
 import { Registry } from '../../../platform/registry/common/platform.js';
 import { PaneCompositeRegistry, Extensions as ViewletExtensions } from '../../browser/panecomposite.js';
 import { CustomTreeView, TreeViewPane } from '../../browser/parts/views/treeView.js';
-// import { ViewPaneContainer } from '../../browser/parts/views/viewPaneContainer.js';
+import { ViewPaneContainer } from '../../browser/parts/views/viewPaneContainer.js';
 import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../common/contributions.js';
 import {
 	ICustomViewDescriptor, IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, Extensions as ViewContainerExtensions,
-	// ViewContainerLocation
+	ViewContainerLocation
 } from '../../common/views.js';
 import { ChatContextKeyExprs } from '../../contrib/chat/common/chatContextKeys.js';
 import { AGENT_SESSIONS_VIEWLET_ID as CHAT_SESSIONS } from '../../contrib/chat/common/constants.js';
@@ -284,7 +283,7 @@ const viewsExtensionPoint: IExtensionPoint<ViewExtensionPointType> = ExtensionsR
 	}
 });
 
-// const CUSTOM_VIEWS_START_ORDER = 7;
+const CUSTOM_VIEWS_START_ORDER = 7;
 
 class ViewsExtensionHandler implements IWorkbenchContribution {
 
@@ -315,6 +314,26 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 	}
 
 	private addCustomViewContainers(extensionPoints: readonly IExtensionPointUser<ViewContainerExtensionPointType>[], existingViewContainers: ViewContainer[]): void {
+		const viewContainersRegistry = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry);
+		let activityBarOrder = CUSTOM_VIEWS_START_ORDER + viewContainersRegistry.all.filter(v => !!v.extensionId && viewContainersRegistry.getViewContainerLocation(v) === ViewContainerLocation.Sidebar).length;
+		let panelOrder = 5 + viewContainersRegistry.all.filter(v => !!v.extensionId && viewContainersRegistry.getViewContainerLocation(v) === ViewContainerLocation.Panel).length + 1;
+		for (const { value, collector, description } of extensionPoints) {
+			Object.entries(value).forEach(([key, value]) => {
+				if (!this.isValidViewsContainer(value, collector)) {
+					return;
+				}
+				switch (key) {
+					case 'activitybar': {
+						activityBarOrder = this.registerCustomViewContainers(value, description, activityBarOrder, existingViewContainers, ViewContainerLocation.Sidebar);
+						break;
+					}
+					case 'panel': {
+						panelOrder = this.registerCustomViewContainers(value, description, panelOrder, existingViewContainers, ViewContainerLocation.Panel);
+						break;
+					}
+				}
+			});
+		}
 	}
 
 
@@ -333,94 +352,85 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 		}
 	}
 
-	// private isValidViewsContainer(viewsContainersDescriptors: IUserFriendlyViewsContainerDescriptor[], collector: ExtensionMessageCollector): boolean {
-	// 	if (!Array.isArray(viewsContainersDescriptors)) {
-	// 		collector.error(localize('viewcontainer requirearray', "views containers must be an array"));
-	// 		return false;
-	// 	}
+	private isValidViewsContainer(viewsContainersDescriptors: IUserFriendlyViewsContainerDescriptor[], collector: ExtensionMessageCollector): boolean {
+		if (!Array.isArray(viewsContainersDescriptors)) {
+			collector.error(localize('viewcontainer requirearray', "views containers must be an array"));
+			return false;
+		}
 
-	// 	for (const descriptor of viewsContainersDescriptors) {
-	// 		if (typeof descriptor.id !== 'string' && isFalsyOrWhitespace(descriptor.id)) {
-	// 			collector.error(localize('requireidstring', "property `{0}` is mandatory and must be of type `string` with non-empty value. Only alphanumeric characters, '_', and '-' are allowed.", 'id'));
-	// 			return false;
-	// 		}
-	// 		if (!(/^[a-z0-9_-]+$/i.test(descriptor.id))) {
-	// 			collector.error(localize('requireidstring', "property `{0}` is mandatory and must be of type `string` with non-empty value. Only alphanumeric characters, '_', and '-' are allowed.", 'id'));
-	// 			return false;
-	// 		}
-	// 		if (typeof descriptor.title !== 'string') {
-	// 			collector.error(localize('requirestring', "property `{0}` is mandatory and must be of type `string`", 'title'));
-	// 			return false;
-	// 		}
-	// 		if (typeof descriptor.icon !== 'string') {
-	// 			collector.error(localize('requirestring', "property `{0}` is mandatory and must be of type `string`", 'icon'));
-	// 			return false;
-	// 		}
-	// 		if (isFalsyOrWhitespace(descriptor.title)) {
-	// 			collector.warn(localize('requirenonemptystring', "property `{0}` is mandatory and must be of type `string` with non-empty value", 'title'));
-	// 			return true;
-	// 		}
-	// 	}
+		for (const descriptor of viewsContainersDescriptors) {
+			if (typeof descriptor.id !== 'string' && isFalsyOrWhitespace(descriptor.id)) {
+				collector.error(localize('requireidstring', "property `{0}` is mandatory and must be of type `string` with non-empty value. Only alphanumeric characters, '_', and '-' are allowed.", 'id'));
+				return false;
+			}
+			if (!(/^[a-z0-9_-]+$/i.test(descriptor.id))) {
+				collector.error(localize('requireidstring', "property `{0}` is mandatory and must be of type `string` with non-empty value. Only alphanumeric characters, '_', and '-' are allowed.", 'id'));
+				return false;
+			}
+			if (typeof descriptor.title !== 'string') {
+				collector.error(localize('requirestring', "property `{0}` is mandatory and must be of type `string`", 'title'));
+				return false;
+			}
+			if (typeof descriptor.icon !== 'string') {
+				collector.error(localize('requirestring', "property `{0}` is mandatory and must be of type `string`", 'icon'));
+				return false;
+			}
+			if (isFalsyOrWhitespace(descriptor.title)) {
+				collector.warn(localize('requirenonemptystring', "property `{0}` is mandatory and must be of type `string` with non-empty value", 'title'));
+				return true;
+			}
+		}
 
-	// 	return true;
-	// }
+		return true;
+	}
 
-	// private registerCustomViewContainers(containers: IUserFriendlyViewsContainerDescriptor[], extension: IExtensionDescription, order: number, existingViewContainers: ViewContainer[], location: ViewContainerLocation): number {
-	// 	containers.forEach(descriptor => {
-	// 		const themeIcon = ThemeIcon.fromString(descriptor.icon);
+	private registerCustomViewContainers(containers: IUserFriendlyViewsContainerDescriptor[], extension: IExtensionDescription, order: number, existingViewContainers: ViewContainer[], location: ViewContainerLocation): number {
+		containers.forEach(descriptor => {
+			const themeIcon = ThemeIcon.fromString(descriptor.icon);
+			const icon = themeIcon || resources.joinPath(extension.extensionLocation, descriptor.icon);
+			const id = `workbench.view.extension.${descriptor.id}`;
+			const title = descriptor.title || id;
+			const viewContainer = this.registerCustomViewContainer(id, title, icon, order++, extension.identifier, location);
 
-	// 		// MEMBRANE: make Membrane Navigator the default view container on the left sidebar
-	// 		const options: { isDefault?: boolean; doNotRegisterOpenCommand?: boolean } = {};
-	// 		if (descriptor.id === 'membraneContainer') {
-	// 			options.isDefault = true;
-	// 		}
+			// Move those views that belongs to this container
+			if (existingViewContainers.length) {
+				const viewsToMove: IViewDescriptor[] = [];
+				for (const existingViewContainer of existingViewContainers) {
+					if (viewContainer !== existingViewContainer) {
+						viewsToMove.push(...this.viewsRegistry.getViews(existingViewContainer).filter(view => (view as ICustomViewDescriptor).originalContainerId === descriptor.id));
+					}
+				}
+				if (viewsToMove.length) {
+					this.viewsRegistry.moveViews(viewsToMove, viewContainer);
+				}
+			}
+		});
+		return order;
+	}
 
-	// 		// MEMBRANE: move Program Overview to auxiliary bar (right-side bar)
-	// 		// const overridenLocation = descriptor.id === 'membraneAuxContainer' ? ViewContainerLocation.AuxiliaryBar : location;
 
-	// 		const icon = themeIcon || resources.joinPath(extension.extensionLocation, descriptor.icon);
-	// 		const id = `workbench.view.extension.${descriptor.id}`;
-	// 		const title = descriptor.title || id;
-	// 		const viewContainer = this.registerCustomViewContainer(id, title, icon, order++, extension.identifier, location, options);
+	private registerCustomViewContainer(id: string, title: string, icon: URI | ThemeIcon, order: number, extensionId: ExtensionIdentifier | undefined, location: ViewContainerLocation): ViewContainer {
+		let viewContainer = this.viewContainersRegistry.get(id);
 
-	// 		// Move those views that belongs to this container
-	// 		if (existingViewContainers.length) {
-	// 			const viewsToMove: IViewDescriptor[] = [];
-	// 			for (const existingViewContainer of existingViewContainers) {
-	// 				if (viewContainer !== existingViewContainer) {
-	// 					viewsToMove.push(...this.viewsRegistry.getViews(existingViewContainer).filter(view => (view as ICustomViewDescriptor).originalContainerId === descriptor.id));
-	// 				}
-	// 			}
-	// 			if (viewsToMove.length) {
-	// 				this.viewsRegistry.moveViews(viewsToMove, viewContainer);
-	// 			}
-	// 		}
-	// 	});
-	// 	return order;
-	// }
+		if (!viewContainer) {
 
-	// private registerCustomViewContainer(id: string, title: string, icon: URI | ThemeIcon, order: number, extensionId: ExtensionIdentifier | undefined, location: ViewContainerLocation, options?: { isDefault?: boolean; doNotRegisterOpenCommand?: boolean }): ViewContainer {
-	// 	let viewContainer = this.viewContainersRegistry.get(id);
+			viewContainer = this.viewContainersRegistry.registerViewContainer({
+				id,
+				title: { value: title, original: title },
+				extensionId,
+				ctorDescriptor: new SyncDescriptor(
+					ViewPaneContainer,
+					[id, { mergeViewWithContainerWhenSingleView: true }]
+				),
+				hideIfEmpty: true,
+				order,
+				icon,
+			}, location);
 
-	// 	if (!viewContainer) {
+		}
 
-	// 		viewContainer = this.viewContainersRegistry.registerViewContainer({
-	// 			id,
-	// 			title: { value: title, original: title },
-	// 			extensionId,
-	// 			ctorDescriptor: new SyncDescriptor(
-	// 				ViewPaneContainer,
-	// 				[id, { mergeViewWithContainerWhenSingleView: true }]
-	// 			),
-	// 			hideIfEmpty: true,
-	// 			order,
-	// 			icon,
-	// 		}, location, options);
-
-	// 	}
-
-	// 	return viewContainer;
-	// }
+		return viewContainer;
+	}
 
 	private deregisterCustomViewContainer(viewContainer: ViewContainer): void {
 		this.viewContainersRegistry.deregisterViewContainer(viewContainer);
@@ -446,6 +456,11 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 			const { value, collector } = extension;
 
 			Object.entries(value).forEach(([key, value]) => {
+				// MEMBRANE: Skip explorer views since we removed the explorer container
+				if (key === 'explorer') {
+					return;
+				}
+
 				if (!this.isValidViewDescriptors(value, collector)) {
 					return;
 				}

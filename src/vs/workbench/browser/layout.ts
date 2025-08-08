@@ -639,7 +639,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			resetLayout: Boolean(this.layoutOptions?.resetLayout)
 		});
 
-		this._register(this.stateModel.onDidChangeState(change => {
+		// MEMBRANE: hide activitybar, statusbar by default
+		// These defaults are also set in `const LayoutStateKeys` in this same file
+		// Setting them here will reset them to hidden upon login if a user toggled them to visible
+		this.stateModel.setRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN, true);
+
+		this.stateModel.onDidChangeState(change => {
 			if (change.key === LayoutStateKeys.ACTIVITYBAR_HIDDEN) {
 				this.setActivityBarHidden(change.value as boolean);
 			}
@@ -661,7 +666,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			}
 
 			this.doUpdateLayoutConfiguration();
-		}));
+		});
 
 		// Layout Initialization State
 		const initialEditorsState = this.getInitialEditorsState();
@@ -701,6 +706,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			initialization: initialLayoutState,
 			runtime: layoutRuntimeState,
 		};
+
+		// MEMBRANE: Always make search the active container in the primary sidebar
+		this.storageService.store(SidebarPart.activeViewletSettingsKey, 'workbench.view.search', StorageScope.WORKSPACE, StorageTarget.MACHINE);
 
 		// Sidebar View Container To Restore
 		if (this.isVisible(Parts.SIDEBAR_PART)) {
@@ -1366,16 +1374,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const config = getZenModeConfiguration(this.configurationService);
 		const zenModeExitInfo = this.stateModel.getRuntimeValue(LayoutStateKeys.ZEN_MODE_EXIT_INFO);
 
-		// MEMBRANE: hard-coded settings when entering zen-mode for the dashboard
-		const activeEditor = this.mainPartEditorService.activeEditor;
-		if (activeEditor?.editorId === 'mainThreadWebview-membrane.dashboard') {
-			config.fullScreen = false;
-			config.centerLayout = false;
-			config.hideActivityBar = true;
-			config.showTabs = 'none';
-			config.silentNotifications = false;
-		}
-
 		// Zen Mode Active
 		if (this.isZenModeActive()) {
 
@@ -1479,10 +1477,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 				this.setSideBarHidden(false);
 			}
 
-			// MEMBRANE: we don't use the activity bar so don't restore it
-			// if (!this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN, true)) {
-			// 	this.setActivityBarHidden(false, true);
-			// }
+			if (!this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN, true)) {
+				this.setActivityBarHidden(false);
+			}
 
 			if (!this.stateModel.getRuntimeValue(LayoutStateKeys.STATUSBAR_HIDDEN, true)) {
 				this.setStatusBarHidden(false);
@@ -2196,7 +2193,22 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.auxiliaryBarPartView, !hidden);
 	}
 
-	setPartHidden(hidden: boolean, part: Parts): void {
+	setPartHidden(hidden: boolean, part: Exclude<SINGLE_WINDOW_PARTS, Parts.STATUSBAR_PART | Parts.TITLEBAR_PART>): void;
+	setPartHidden(hidden: boolean, part: Exclude<MULTI_WINDOW_PARTS, Parts.STATUSBAR_PART | Parts.TITLEBAR_PART>, targetWindow: Window): void;
+	setPartHidden(hidden: boolean, part: Parts, targetWindow: Window = mainWindow): void {
+		// MEMBRANE: Force certain parts to always stay hidden
+		const MEMBRANE_FORCE_HIDDEN_PARTS = [
+			// Parts.ACTIVITYBAR_PART,
+			// Parts.SIDEBAR_PART,
+			Parts.AUXILIARYBAR_PART,
+			Parts.PANEL_PART,
+			Parts.STATUSBAR_PART,
+			Parts.BANNER_PART
+		];
+		// If trying to show a part that should be force-hidden, ignore it
+		if (MEMBRANE_FORCE_HIDDEN_PARTS.includes(part) && !hidden) {
+			return;
+		}
 		switch (part) {
 			case Parts.ACTIVITYBAR_PART:
 				return this.setActivityBarHidden(hidden);
@@ -2749,8 +2761,10 @@ const LayoutStateKeys = {
 	PANEL_ALIGNMENT: new RuntimeStateKey<PanelAlignment>('panel.alignment', StorageScope.PROFILE, StorageTarget.USER, 'center'),
 
 	// Part Visibility
-	ACTIVITYBAR_HIDDEN: new RuntimeStateKey<boolean>('activityBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true),
-	SIDEBAR_HIDDEN: new RuntimeStateKey<boolean>('sideBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
+	// MEMBRANE: Do not hide activitybar by default
+	ACTIVITYBAR_HIDDEN: new RuntimeStateKey<boolean>('activityBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true, true),
+	// MEMBRANE: Do not hide sidebar by default
+	SIDEBAR_HIDDEN: new RuntimeStateKey<boolean>('sideBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	EDITOR_HIDDEN: new RuntimeStateKey<boolean>('editor.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
 	PANEL_HIDDEN: new RuntimeStateKey<boolean>('panel.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	AUXILIARYBAR_HIDDEN: new RuntimeStateKey<boolean>('auxiliaryBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
