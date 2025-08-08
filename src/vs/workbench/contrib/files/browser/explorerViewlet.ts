@@ -19,7 +19,7 @@ import { IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IContextKeyService, IContextKey, ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { IViewsRegistry, IViewDescriptor, Extensions, ViewContainer, IViewContainersRegistry, ViewContainerLocation, IViewDescriptorService, ViewContentGroups } from 'vs/workbench/common/views';
+import { IViewsRegistry, IViewDescriptor, Extensions, ViewContainer, IViewDescriptorService, ViewContentGroups } from 'vs/workbench/common/views';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
@@ -51,6 +51,7 @@ export class ExplorerViewletViewsContribution extends Disposable implements IWor
 		super();
 
 		progressService.withProgress({ location: ProgressLocation.Explorer }, () => workspaceContextService.getCompleteWorkspace()).finally(() => {
+			// MEMBRANE
 			// this.registerViews();
 
 			// this._register(workspaceContextService.onDidChangeWorkbenchState(() => this.registerViews()));
@@ -247,12 +248,13 @@ export class ExplorerViewPaneContainer extends ViewPaneContainer {
 	}
 }
 
-const viewContainerRegistry = Registry.as<IViewContainersRegistry>(Extensions.ViewContainersRegistry);
+// MEMBRANE: Do not register explorer view but keep definition to avoid compilation errors
+// const viewContainerRegistry = Registry.as<IViewContainersRegistry>(Extensions.ViewContainersRegistry);
 
 /**
  * Explorer viewlet container.
  */
-export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewContainer({
+export const VIEW_CONTAINER: ViewContainer = {
 	id: VIEWLET_ID,
 	title: localize2('explore', "Explorer"),
 	ctorDescriptor: new SyncDescriptor(ExplorerViewPaneContainer),
@@ -267,9 +269,11 @@ export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewC
 		mnemonicTitle: localize({ key: 'miViewExplorer', comment: ['&& denotes a mnemonic'] }, "&&Explorer"),
 		keybindings: { primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyE },
 		order: 0
-	},
-	// MEMBRANE: the Membrane Navigator is the default view container on the left sidebar
-}, ViewContainerLocation.Sidebar, { isDefault: false, doNotRegisterOpenCommand: true });
+	}
+};
+
+// MEMBRANE: Don't actually register the view container
+// viewContainerRegistry.registerViewContainer(VIEW_CONTAINER, ViewContainerLocation.Sidebar, { isDefault: false, doNotRegisterOpenCommand: true });
 
 const openFolder = localize('openFolder', "Open Folder");
 const addAFolder = localize('addAFolder', "add a folder");
