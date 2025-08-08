@@ -98,6 +98,15 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 				);
 			},
 		},
+		{
+			id: 'membrane.reportModalState',
+			handler: (cmdArgs) => {
+				// cmdArgs { gaze_instance, element_id, has_modal }
+				window.dispatchEvent(
+					new CustomEvent('gaze:modal-state', { detail: cmdArgs }),
+				);
+			},
+		},
 		// For extension panels to bubble up errors
 		{
 			id: 'membrane.reportError',
