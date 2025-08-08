@@ -78,13 +78,13 @@ export class PanelPart extends AbstractPaneCompositePart {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
-		@ICommandService protected override commandService: ICommandService,
+		@ICommandService private commandService: ICommandService,
 		@IMenuService menuService: IMenuService,
 		@IConfigurationService private configurationService: IConfigurationService
 	) {
 		super(
 			Parts.PANEL_PART,
-			{ hasTitle: true, trailingSeparator: true },
+			{ hasTitle: true },
 			PanelPart.activePanelSettingsKey,
 			ActivePanelContext.bindTo(contextKeyService),
 			PanelFocusContext.bindTo(contextKeyService),

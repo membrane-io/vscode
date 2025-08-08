@@ -179,7 +179,6 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			instantiationService,
 			themeService,
 			Registry.as<PaneCompositeRegistry>(registryId),
-			commandService,
 			activePaneCompositeSettingsKey,
 			viewDescriptorService.getDefaultViewContainer(location)?.id || '',
 			nameForTelemetry,

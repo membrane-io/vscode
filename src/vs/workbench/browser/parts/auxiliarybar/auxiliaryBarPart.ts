@@ -90,7 +90,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
-		@ICommandService protected override commandService: ICommandService,
+		@ICommandService private commandService: ICommandService,
 		@IMenuService menuService: IMenuService,
 		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
@@ -98,7 +98,6 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			Parts.AUXILIARYBAR_PART,
 			{
 				hasTitle: true,
-				trailingSeparator: true,
 				borderWidth: () => (this.getColor(SIDE_BAR_BORDER) || this.getColor(contrastBorder)) ? 1 : 0,
 			},
 			AuxiliaryBarPart.activeViewSettingsKey,

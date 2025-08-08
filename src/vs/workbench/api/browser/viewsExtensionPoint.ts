@@ -12,7 +12,7 @@ import { ThemeIcon } from '../../../base/common/themables.js';
 import { URI } from '../../../base/common/uri.js';
 import { localize } from '../../../nls.js';
 import { ContextKeyExpr } from '../../../platform/contextkey/common/contextkey.js';
-import { ExtensionIdentifier, ExtensionIdentifierSet, IExtensionManifest } from '../../../platform/extensions/common/extensions.js';
+import { ExtensionIdentifier, ExtensionIdentifierSet, IExtensionDescription, IExtensionManifest } from '../../../platform/extensions/common/extensions.js';
 import { SyncDescriptor } from '../../../platform/instantiation/common/descriptors.js';
 import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../platform/log/common/log.js';
