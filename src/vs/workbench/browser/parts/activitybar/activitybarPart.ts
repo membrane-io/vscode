@@ -15,12 +15,14 @@ import { ToggleSidebarPositionAction } from 'vs/workbench/browser/actions/layout
 import { IThemeService, IColorTheme, registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { ACTIVITY_BAR_BACKGROUND, ACTIVITY_BAR_BORDER, ACTIVITY_BAR_FOREGROUND, ACTIVITY_BAR_ACTIVE_BORDER, ACTIVITY_BAR_BADGE_BACKGROUND, ACTIVITY_BAR_BADGE_FOREGROUND, ACTIVITY_BAR_INACTIVE_FOREGROUND, ACTIVITY_BAR_ACTIVE_BACKGROUND, ACTIVITY_BAR_DRAG_AND_DROP_BORDER, ACTIVITY_BAR_ACTIVE_FOCUS_BORDER } from 'vs/workbench/common/theme';
 import { activeContrastBorder, contrastBorder, focusBorder } from 'vs/platform/theme/common/colorRegistry';
-import { addDisposableListener, append, EventType, isAncestor, $, clearNode } from 'vs/base/browser/dom';
+// MEMBRANE: isAncestor not used 
+import { addDisposableListener, append, EventType, $, clearNode } from 'vs/base/browser/dom';
 import { assertIsDefined } from 'vs/base/common/types';
 import { CustomMenubarControl } from 'vs/workbench/browser/parts/titlebar/menubarControl';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { getMenuBarVisibility } from 'vs/platform/window/common/window';
-import { IAction, Separator, SubmenuAction, toAction } from 'vs/base/common/actions';
+// MEMBRANE: SubmenuAction not used because we removed activity-bar submenu action
+import { IAction, Separator, toAction } from 'vs/base/common/actions';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
@@ -29,10 +31,12 @@ import { IPaneCompositePart } from 'vs/workbench/browser/parts/paneCompositePart
 import { IPaneCompositeBarOptions, PaneCompositeBar } from 'vs/workbench/browser/parts/paneCompositeBar';
 import { GlobalCompositeBar } from 'vs/workbench/browser/parts/globalCompositeBar';
 import { IStorageService } from 'vs/platform/storage/common/storage';
-import { Action2, IAction2Options, IMenuService, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
+// MEMBRANE: IMenuService not used because we don't show menu option in context menu now
+import { Action2, IAction2Options, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
-import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
+// MEMBRANE: Not used because we aren't showing the menu context action
+// import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { IViewDescriptorService, ViewContainerLocation, ViewContainerLocationToString } from 'vs/workbench/common/views';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
@@ -212,7 +216,8 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IMenuService private readonly menuService: IMenuService,
+		// MEMBRANE: Not used because we don't show menu option in context menu now
+		// @IMenuService private readonly menuService: IMenuService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 	) {
 		super({
@@ -240,17 +245,18 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 	}
 
 	private fillContextMenuActions(actions: IAction[], e?: MouseEvent | GestureEvent) {
+		// MEMBRANE: Don't show menu visibiity toggle
 		// Menu
-		const menuBarVisibility = getMenuBarVisibility(this.configurationService);
-		if (menuBarVisibility === 'compact' || menuBarVisibility === 'hidden' || menuBarVisibility === 'toggle') {
-			actions.unshift(...[toAction({ id: 'toggleMenuVisibility', label: localize('menu', "Menu"), checked: menuBarVisibility === 'compact', run: () => this.configurationService.updateValue('window.menuBarVisibility', menuBarVisibility === 'compact' ? 'toggle' : 'compact') }), new Separator()]);
-		}
+		// const menuBarVisibility = getMenuBarVisibility(this.configurationService);
+		// if (menuBarVisibility === 'compact' || menuBarVisibility === 'hidden' || menuBarVisibility === 'toggle') {
+		// 	actions.unshift(...[toAction({ id: 'toggleMenuVisibility', label: localize('menu', "Menu"), checked: menuBarVisibility === 'compact', run: () => this.configurationService.updateValue('window.menuBarVisibility', menuBarVisibility === 'compact' ? 'toggle' : 'compact') }), new Separator()]);
+		// }
 
-		if (menuBarVisibility === 'compact' && this.menuBarContainer && e?.target) {
-			if (isAncestor(e.target as Node, this.menuBarContainer)) {
-				actions.unshift(...[toAction({ id: 'hideCompactMenu', label: localize('hideMenu', "Hide Menu"), run: () => this.configurationService.updateValue('window.menuBarVisibility', 'toggle') }), new Separator()]);
-			}
-		}
+		// if (menuBarVisibility === 'compact' && this.menuBarContainer && e?.target) {
+		// 	if (isAncestor(e.target as Node, this.menuBarContainer)) {
+		// 		actions.unshift(...[toAction({ id: 'hideCompactMenu', label: localize('hideMenu', "Hide Menu"), run: () => this.configurationService.updateValue('window.menuBarVisibility', 'toggle') }), new Separator()]);
+		// 	}
+		// }
 
 		// Global Composite Bar
 		if (this.globalCompositeBar) {
@@ -366,13 +372,19 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 		super.layout(width, height);
 	}
 
+	// MEMBRANE: Disable activity bar position menu
 	getActivityBarContextMenuActions(): IAction[] {
-		const activityBarPositionMenu = this.menuService.createMenu(MenuId.ActivityBarPositionMenu, this.contextKeyService);
-		const positionActions: IAction[] = [];
-		createAndFillInContextMenuActions(activityBarPositionMenu, { shouldForwardArgs: true, renderShortTitle: true }, { primary: [], secondary: positionActions });
-		activityBarPositionMenu.dispose();
+		// const activityBarPositionMenu = this.menuService.createMenu(MenuId.ActivityBarPositionMenu, this.contextKeyService);
+		// const positionActions: IAction[] = [];
+		// createAndFillInContextMenuActions(activityBarPositionMenu, { shouldForwardArgs: true, renderShortTitle: true }, { primary: [], secondary: positionActions });
+		// activityBarPositionMenu.dispose();
+		// return [
+		//     new SubmenuAction('workbench.action.panel.position', localize('activity bar position', "Activity Bar Position"), positionActions),
+		//     toAction({ id: ToggleSidebarPositionAction.ID, label: ToggleSidebarPositionAction.getLabel(this.layoutService), run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarPositionAction().run(accessor)) })
+		// ];
+
+		// Return only the sidebar position toggle, or empty array to remove all options
 		return [
-			new SubmenuAction('workbench.action.panel.position', localize('activity bar position', "Activity Bar Position"), positionActions),
 			toAction({ id: ToggleSidebarPositionAction.ID, label: ToggleSidebarPositionAction.getLabel(this.layoutService), run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarPositionAction().run(accessor)) })
 		];
 	}
