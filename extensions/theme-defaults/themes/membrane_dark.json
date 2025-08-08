@@ -4,7 +4,8 @@
 	"include": "./dark_modern.json",
 	"colors": {
 		"sash.hoverBorder": "#808080",
-		"editorCodeLens.foreground": "#845bff"
+		"editorCodeLens.foreground": "#845bff",
+		"menu.selectionBackground": "#2a2a2a",     
 	},
 	"tokenColors": [
 		// BEGIN STYLE RESET: makes everything white (actual colors are below)

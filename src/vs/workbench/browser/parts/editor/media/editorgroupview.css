@@ -63,8 +63,8 @@
 	/* MEMRBANE: customize letterpress watermark */
 	background-image: url('./membrane-letterpress-dark.svg');
 }
-	
-/* 
+
+/*
  * MEMBRANE: rm hc letterpress watermark
 
 .monaco-workbench.hc-light .part.editor > .content .editor-group-container .editor-group-watermark > .letterpress {
