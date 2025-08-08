@@ -5,7 +5,10 @@
 // @ts-check
 import CopyPlugin from 'copy-webpack-plugin';
 import path from 'path';
+import { createRequire } from 'node:module';
 import defaultConfig, { browser as withBrowserDefaults, browserPlugins } from '../shared.webpack.config.mjs';
+
+const require = createRequire(import.meta.url);
 
 const languages = [
 	'zh-tw',
@@ -26,6 +29,12 @@ export default [withBrowserDefaults({
 	context: import.meta.dirname,
 	entry: {
 		extension: './src/extension.browser.ts',
+	},
+	resolve: {
+		// Ensure events is available for ts-plugin and its dependencies
+		fallback: {
+			'events': require.resolve('events/'),
+		}
 	},
 	plugins: [
 		...browserPlugins(import.meta.dirname), // add plugins, don't replace inherited
@@ -55,7 +64,7 @@ export default [withBrowserDefaults({
 				}))
 			],
 		}),
-	], 
+	],
 }), withBrowserDefaults({
 	context: import.meta.dirname,
 	entry: {
@@ -72,7 +81,14 @@ export default [withBrowserDefaults({
 		path: path.join(import.meta.dirname, 'dist', 'browser'),
 		libraryTarget: undefined,
 	},
+	resolve: {
+		// Override to ensure events is bundled, not externalized
+		fallback: {
+			'events': require.resolve('events/'),
+		}
+	},
 	externals: {
 		'perf_hooks': 'commonjs perf_hooks',
+		// Explicitly do NOT externalize 'events' - it must be bundled
 	}
 })];

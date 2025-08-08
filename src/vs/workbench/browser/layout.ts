@@ -643,15 +643,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		// These defaults are also set in `const LayoutStateKeys` in this same file
 		// Setting them here will reset them to hidden upon login if a user toggled them to visible
 		this.stateModel.setRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN, true);
-		this.stateModel.setRuntimeValue(LayoutStateKeys.STATUSBAR_HIDDEN, true);
-
-		// MEMBRANE: More config updates to clean up the editor (overrides user settings)
-		// MEMBRANE: NOTE(gazetoide): As we replace VSCode settings and move to a simpler settings UI in gaze
-		// this list will probably grow. The goal is to cut down the settings to our few chosen options and force
-		// everything else to good defaults.
-		// MEMBRANE: For activity bar position, make sure it is set to 'top'
-		this.configurationService.updateValue('workbench.activityBar.location', 'top');
-		this.configurationService.updateValue('editor.minimap.enabled', false);
 
 		this.stateModel.onDidChangeState(change => {
 			if (change.key === LayoutStateKeys.ACTIVITYBAR_HIDDEN) {
@@ -1487,7 +1478,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			}
 
 			if (!this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN, true)) {
-				this.setActivityBarHidden(false);
+				this.setActivityBarHidden(true);
 			}
 
 			if (!this.stateModel.getRuntimeValue(LayoutStateKeys.STATUSBAR_HIDDEN, true)) {
@@ -2770,9 +2761,9 @@ const LayoutStateKeys = {
 	PANEL_ALIGNMENT: new RuntimeStateKey<PanelAlignment>('panel.alignment', StorageScope.PROFILE, StorageTarget.USER, 'center'),
 
 	// Part Visibility
-	// MEMBRANE: Hide activitybar by default
+	// MEMBRANE: Do not hide activitybar by default
 	ACTIVITYBAR_HIDDEN: new RuntimeStateKey<boolean>('activityBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true, true),
-	// MEMBRANE: Hide sidebar by default
+	// MEMBRANE: Do not hide sidebar by default
 	SIDEBAR_HIDDEN: new RuntimeStateKey<boolean>('sideBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	EDITOR_HIDDEN: new RuntimeStateKey<boolean>('editor.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
 	PANEL_HIDDEN: new RuntimeStateKey<boolean>('panel.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),

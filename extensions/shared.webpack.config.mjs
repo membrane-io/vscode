@@ -108,17 +108,20 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 	const defaultConfig = {
 		mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 		target: 'webworker', // extensions run in a webworker context
+		node: false, // Disable Node.js polyfills - we handle them via fallback
 		resolve: {
 			alias: {
 				// MEMBRANE: ts-plugin is bundled inside typescript-language-features since vscode web doesn't support the
 				// normal typescriptServerPlugins extension setting.
 				'./platform/vscode': path.resolve(import.meta.dirname, '../../ts-plugin/src/platform/browser.ts'),
+				// Ensure 'events' module is resolved correctly for browser builds
+				'events': require.resolve('events'),
 			},
 			mainFields: ['browser', 'module', 'main'],
 			extensions: ['.ts', '.js'], // support ts-files and js-files
 			fallback: {
 				'os': require.resolve('os-browserify'),
-				'events': require.resolve('events'),
+				'events': require.resolve('events/'),
 				// 'os': require.resolve('os-browserify'),
 				'path': require.resolve('path-browserify'),
 				'util': require.resolve('util/')
@@ -209,7 +212,15 @@ function browserPlugins(context) {
 			'process.platform': JSON.stringify('web'),
 			'process.env': JSON.stringify({}),
 			'process.env.BROWSER_ENV': JSON.stringify('true')
-		})
+		}),
+		new webpack.ProvidePlugin({
+			'events': require.resolve('events')
+		}),
+		// Ensure events module is bundled
+		new webpack.NormalModuleReplacementPlugin(
+			/^events$/,
+			require.resolve('events')
+		)
 	];
 }
 
