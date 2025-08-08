@@ -342,7 +342,7 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 	private addCustomViewContainers(extensionPoints: readonly IExtensionPointUser<ViewContainerExtensionPointType>[], existingViewContainers: ViewContainer[]): void {
 		const viewContainersRegistry = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry);
 		let activityBarOrder = CUSTOM_VIEWS_START_ORDER + viewContainersRegistry.all.filter(v => !!v.extensionId && viewContainersRegistry.getViewContainerLocation(v) === ViewContainerLocation.Sidebar).length;
-		// let panelOrder = 5 + viewContainersRegistry.all.filter(v => !!v.extensionId && viewContainersRegistry.getViewContainerLocation(v) === ViewContainerLocation.Panel).length + 1;
+		let panelOrder = 5 + viewContainersRegistry.all.filter(v => !!v.extensionId && viewContainersRegistry.getViewContainerLocation(v) === ViewContainerLocation.Panel).length + 1;
 		for (const { value, collector, description } of extensionPoints) {
 			Object.entries(value).forEach(([key, value]) => {
 				if (!this.isValidViewsContainer(value, collector)) {
@@ -350,17 +350,13 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 				}
 				switch (key) {
 					case 'activitybar': {
-						// MEMBRANE: ensure Navigator is first in activity bar (left sidebar)
-						const order = value?.some(v => v.id === 'membraneContainer') ? 0 : activityBarOrder;
-						activityBarOrder = this.registerCustomViewContainers(value, description, order, existingViewContainers, ViewContainerLocation.Sidebar);
+						activityBarOrder = this.registerCustomViewContainers(value, description, activityBarOrder, existingViewContainers, ViewContainerLocation.Sidebar);
 						break;
 					}
-					// case 'panel': {
-					// 	// MEMBRANE: ensure Logs are first in panel (bottom pane)
-					// 	const order = description.identifier.value === 'membrane.membrane' ? 0 : panelOrder;
-					// 	panelOrder = this.registerCustomViewContainers(value, description, order, existingViewContainers, ViewContainerLocation.Panel);
-					// 	break;
-					// }
+					case 'panel': {
+						panelOrder = this.registerCustomViewContainers(value, description, panelOrder, existingViewContainers, ViewContainerLocation.Panel);
+						break;
+					}
 				}
 			});
 		}
@@ -416,20 +412,10 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 	private registerCustomViewContainers(containers: IUserFriendlyViewsContainerDescriptor[], extension: IExtensionDescription, order: number, existingViewContainers: ViewContainer[], location: ViewContainerLocation): number {
 		containers.forEach(descriptor => {
 			const themeIcon = ThemeIcon.fromString(descriptor.icon);
-
-			// MEMBRANE: make Membrane Navigator the default view container on the left sidebar
-			const options: { isDefault?: boolean; doNotRegisterOpenCommand?: boolean } = {};
-			if (descriptor.id === 'membraneContainer') {
-				options.isDefault = true;
-			}
-
-			// MEMBRANE: move Program Overview to auxiliary bar (right-side bar)
-			// const overridenLocation = descriptor.id === 'membraneAuxContainer' ? ViewContainerLocation.AuxiliaryBar : location;
-
 			const icon = themeIcon || resources.joinPath(extension.extensionLocation, descriptor.icon);
 			const id = `workbench.view.extension.${descriptor.id}`;
 			const title = descriptor.title || id;
-			const viewContainer = this.registerCustomViewContainer(id, title, icon, order++, extension.identifier, location, options);
+			const viewContainer = this.registerCustomViewContainer(id, title, icon, order++, extension.identifier, location);
 
 			// Move those views that belongs to this container
 			if (existingViewContainers.length) {
@@ -447,7 +433,7 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 		return order;
 	}
 
-	private registerCustomViewContainer(id: string, title: string, icon: URI | ThemeIcon, order: number, extensionId: ExtensionIdentifier | undefined, location: ViewContainerLocation, options: { isDefault?: boolean; doNotRegisterOpenCommand?: boolean }): ViewContainer {
+	private registerCustomViewContainer(id: string, title: string, icon: URI | ThemeIcon, order: number, extensionId: ExtensionIdentifier | undefined, location: ViewContainerLocation): ViewContainer {
 		let viewContainer = this.viewContainersRegistry.get(id);
 
 		if (!viewContainer) {
@@ -463,7 +449,7 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 				hideIfEmpty: true,
 				order,
 				icon,
-			}, location, options);
+			}, location);
 
 		}
 
@@ -494,6 +480,11 @@ class ViewsExtensionHandler implements IWorkbenchContribution {
 			const { value, collector } = extension;
 
 			Object.entries(value).forEach(([key, value]) => {
+				// MEMBRANE: Skip explorer views since we removed the explorer container
+				if (key === 'explorer') {
+					return;
+				}
+
 				if (!this.isValidViewDescriptors(value, collector)) {
 					return;
 				}
