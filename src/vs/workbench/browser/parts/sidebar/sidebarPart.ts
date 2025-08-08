@@ -12,8 +12,6 @@ import { IContextMenuService } from 'vs/platform/contextview/browser/contextView
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-// MEMBRANE: import and instantiate command service for back to Navigator button. See CompositePart superclass
-import { ICommandService } from 'vs/platform/commands/common/commands';
 import { contrastBorder } from 'vs/platform/theme/common/colorRegistry';
 import { SIDE_BAR_TITLE_FOREGROUND, SIDE_BAR_BACKGROUND, SIDE_BAR_FOREGROUND, SIDE_BAR_BORDER, SIDE_BAR_DRAG_AND_DROP_BACKGROUND, ACTIVITY_BAR_BADGE_BACKGROUND, ACTIVITY_BAR_BADGE_FOREGROUND, ACTIVITY_BAR_TOP_FOREGROUND, ACTIVITY_BAR_TOP_ACTIVE_BORDER, ACTIVITY_BAR_TOP_INACTIVE_FOREGROUND, ACTIVITY_BAR_TOP_DRAG_AND_DROP_BORDER } from 'vs/workbench/common/theme';
 import { INotificationService } from 'vs/platform/notification/common/notification';
@@ -40,8 +38,8 @@ export class SidebarPart extends AbstractPaneCompositePart {
 
 	//#region IView
 
-	// MEMBRANE: adjust min width of sidebar
-	readonly minimumWidth: number = 352;
+	// MEMBRANE: adjust min width of sidebar (this could be smaller)
+	readonly minimumWidth: number = 252;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 	readonly minimumHeight: number = 0;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
@@ -80,13 +78,10 @@ export class SidebarPart extends AbstractPaneCompositePart {
 		@IExtensionService extensionService: IExtensionService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IMenuService menuService: IMenuService,
-		// MEMBRANE: instantiate command service for back to Navigator button. See CompositePart superclass
-		@ICommandService commandService: ICommandService,
 	) {
 		super(
 			Parts.SIDEBAR_PART,
-			// MEMBRANE: hide title area for Navigator and Logs
-			{ hasTitle: false, borderWidth: () => (this.getColor(SIDE_BAR_BORDER) || this.getColor(contrastBorder)) ? 1 : 0 },
+			{ hasTitle: true, borderWidth: () => (this.getColor(SIDE_BAR_BORDER) || this.getColor(contrastBorder)) ? 1 : 0 },
 			SidebarPart.activeViewletSettingsKey,
 			ActiveViewletContext.bindTo(contextKeyService),
 			SidebarFocusContext.bindTo(contextKeyService),
@@ -104,8 +99,6 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			contextKeyService,
 			extensionService,
 			menuService,
-			// MEMBRANE: command service added to superclass CompositePart
-			commandService,
 		);
 
 		this.acitivityBarPart = this._register(instantiationService.createInstance(ActivitybarPart, this));

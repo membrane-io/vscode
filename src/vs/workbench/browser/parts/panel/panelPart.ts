@@ -75,14 +75,12 @@ export class PanelPart extends AbstractPaneCompositePart {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
-		// MEMBRANE: rm private modifier for command service. See superclass CompositePart
-		@ICommandService commandService: ICommandService,
+		@ICommandService private commandService: ICommandService,
 		@IMenuService menuService: IMenuService,
 	) {
 		super(
 			Parts.PANEL_PART,
-			// MEMBRANE: hide title area for Navigator and Logs
-			{ hasTitle: false },
+			{ hasTitle: true },
 			PanelPart.activePanelSettingsKey,
 			ActivePanelContext.bindTo(contextKeyService),
 			PanelFocusContext.bindTo(contextKeyService),
@@ -100,8 +98,6 @@ export class PanelPart extends AbstractPaneCompositePart {
 			contextKeyService,
 			extensionService,
 			menuService,
-			// MEMBRANE: command service added to superclass CompositePart
-			commandService,
 		);
 	}
 

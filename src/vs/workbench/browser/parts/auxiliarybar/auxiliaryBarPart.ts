@@ -77,15 +77,13 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
-		// MEMBRANE: rm private modifier for command service. See superclass CompositePart
-		@ICommandService commandService: ICommandService,
+		@ICommandService private commandService: ICommandService,
 		@IMenuService menuService: IMenuService,
 	) {
 		super(
 			Parts.AUXILIARYBAR_PART,
 			{
-				// MEMBRANE: hide title area for auxiliary bar
-				hasTitle: false,
+				hasTitle: true,
 				borderWidth: () => (this.getColor(SIDE_BAR_BORDER) || this.getColor(contrastBorder)) ? 1 : 0,
 			},
 			AuxiliaryBarPart.activePanelSettingsKey,
@@ -105,8 +103,6 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			contextKeyService,
 			extensionService,
 			menuService,
-			// MEMBRANE: command service added to superclass CompositePart
-			commandService,
 		);
 	}
 

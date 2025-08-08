@@ -24,8 +24,6 @@ import { IProgressIndicator, IEditorProgressService } from 'vs/platform/progress
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-// MEMBRANE: import command service for back to Navigator button
-import { ICommandService } from 'vs/platform/commands/common/commands';
 import { Dimension, append, $, hide, show } from 'vs/base/browser/dom';
 import { AnchorAlignment } from 'vs/base/browser/ui/contextview/contextview';
 import { assertIsDefined } from 'vs/base/common/types';
@@ -82,8 +80,6 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		protected readonly keybindingService: IKeybindingService,
 		protected readonly instantiationService: IInstantiationService,
 		themeService: IThemeService,
-		// MEMBRANE: include command service, instantiated in SidebarPart for back to Navigator button
-		protected readonly commandService: ICommandService,
 		protected readonly registry: CompositeRegistry<T>,
 		private readonly activeCompositeSettingsKey: string,
 		private readonly defaultCompositeId: string,
@@ -391,23 +387,6 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		// Title Area Container
 		const titleArea = append(parent, $('.composite'));
 		titleArea.classList.add('title');
-
-		// MEMBRANE: hide title area for Navigator and Logs
-		// We add it back for other parts in compositepart.css
-		titleArea.style.display = 'none';
-		titleArea.style.height = '0px';
-
-		// MEMBRANE: back to Navigator button
-		const backToNavigator = document.createElement('a');
-		backToNavigator.classList.add('back-to-membrane-navigator', 'codicon', 'codicon-x', 'action-item', 'action-label');
-		backToNavigator.setAttribute('title', 'Back to Membrane Navigator');
-		backToNavigator.setAttribute('aria-label', 'Back to Membrane Navigator');
-		backToNavigator.setAttribute('role', 'button');
-		backToNavigator.onclick = () => {
-			this.commandService.executeCommand('membrane.main.focus');
-		};
-
-		titleArea.prepend(backToNavigator);
 
 		// Left Title Label
 		this.titleLabel = this.createTitleLabel(titleArea);
