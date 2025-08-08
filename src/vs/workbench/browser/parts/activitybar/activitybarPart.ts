@@ -214,7 +214,8 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IMenuService private readonly menuService: IMenuService,
+		// MEMBRANE: Not used because we don't show menu option in context menu now
+		// @IMenuService private readonly menuService: IMenuService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 	) {
 		super({
@@ -242,17 +243,18 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 	}
 
 	private fillContextMenuActions(actions: IAction[], e?: MouseEvent | GestureEvent) {
+		// MEMBRANE: Don't show menu visibiity toggle
 		// Menu
-		const menuBarVisibility = getMenuBarVisibility(this.configurationService);
-		if (menuBarVisibility === 'compact' || menuBarVisibility === 'hidden' || menuBarVisibility === 'toggle') {
-			actions.unshift(...[toAction({ id: 'toggleMenuVisibility', label: localize('menu', "Menu"), checked: menuBarVisibility === 'compact', run: () => this.configurationService.updateValue(MenuSettings.MenuBarVisibility, menuBarVisibility === 'compact' ? 'toggle' : 'compact') }), new Separator()]);
-		}
+		// const menuBarVisibility = getMenuBarVisibility(this.configurationService);
+		// if (menuBarVisibility === 'compact' || menuBarVisibility === 'hidden' || menuBarVisibility === 'toggle') {
+		// 	actions.unshift(...[toAction({ id: 'toggleMenuVisibility', label: localize('menu', "Menu"), checked: menuBarVisibility === 'compact', run: () => this.configurationService.updateValue('window.menuBarVisibility', menuBarVisibility === 'compact' ? 'toggle' : 'compact') }), new Separator()]);
+		// }
 
-		if (menuBarVisibility === 'compact' && this.menuBarContainer && e?.target) {
-			if (isAncestor(e.target as Node, this.menuBarContainer)) {
-				actions.unshift(...[toAction({ id: 'hideCompactMenu', label: localize('hideMenu', "Hide Menu"), run: () => this.configurationService.updateValue(MenuSettings.MenuBarVisibility, 'toggle') }), new Separator()]);
-			}
-		}
+		// if (menuBarVisibility === 'compact' && this.menuBarContainer && e?.target) {
+		// 	if (isAncestor(e.target as Node, this.menuBarContainer)) {
+		// 		actions.unshift(...[toAction({ id: 'hideCompactMenu', label: localize('hideMenu', "Hide Menu"), run: () => this.configurationService.updateValue('window.menuBarVisibility', 'toggle') }), new Separator()]);
+		// 	}
+		// }
 
 		// Global Composite Bar
 		if (this.globalCompositeBar) {
@@ -366,19 +368,21 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 		super.layout(width, height);
 	}
 
+	// MEMBRANE: Disable activity bar position menu
 	getActivityBarContextMenuActions(): IAction[] {
-		const activityBarPositionMenu = this.menuService.getMenuActions(MenuId.ActivityBarPositionMenu, this.contextKeyService, { shouldForwardArgs: true, renderShortTitle: true });
-		const positionActions = getContextMenuActions(activityBarPositionMenu).secondary;
-		const actions = [
-			new SubmenuAction('workbench.action.panel.position', localize('activity bar position', "Activity Bar Position"), positionActions),
-			toAction({ id: ToggleSidebarPositionAction.ID, label: ToggleSidebarPositionAction.getLabel(this.layoutService), run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarPositionAction().run(accessor)) }),
+		// const activityBarPositionMenu = this.menuService.createMenu(MenuId.ActivityBarPositionMenu, this.contextKeyService);
+		// const positionActions: IAction[] = [];
+		// createAndFillInContextMenuActions(activityBarPositionMenu, { shouldForwardArgs: true, renderShortTitle: true }, { primary: [], secondary: positionActions });
+		// activityBarPositionMenu.dispose();
+		// return [
+		//     new SubmenuAction('workbench.action.panel.position', localize('activity bar position', "Activity Bar Position"), positionActions),
+		//     toAction({ id: ToggleSidebarPositionAction.ID, label: ToggleSidebarPositionAction.getLabel(this.layoutService), run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarPositionAction().run(accessor)) })
+		// ];
+
+		// Return only the sidebar position toggle, or empty array to remove all options
+		return [
+			toAction({ id: ToggleSidebarPositionAction.ID, label: ToggleSidebarPositionAction.getLabel(this.layoutService), run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarPositionAction().run(accessor)) })
 		];
-
-		if (this.part === Parts.SIDEBAR_PART) {
-			actions.push(toAction({ id: ToggleSidebarVisibilityAction.ID, label: ToggleSidebarVisibilityAction.LABEL, run: () => this.instantiationService.invokeFunction(accessor => new ToggleSidebarVisibilityAction().run(accessor)) }));
-		}
-
-		return actions;
 	}
 
 }
