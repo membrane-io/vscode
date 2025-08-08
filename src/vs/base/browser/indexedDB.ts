@@ -230,7 +230,6 @@ export class IndexedDB {
 
 function isMembraneKey(key: unknown): boolean {
 	const MEMBRANE_KEYS = [
-		'memento/webviewView.membrane.main',
 		'/User/settings.json',
 		'/User/keybindings.json'
 	];
