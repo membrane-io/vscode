@@ -34,10 +34,8 @@
 }
 
 .monaco-workbench .part > .title {
-	/* MEMBRANE: align composite bar padding with gaze program overview panel padding */
-	padding-left: 4px;
-	padding-right: 0px;
-	border-bottom: 1px solid var(--vscode-widget-border);
+	padding-left: 8px;
+	padding-right: 8px;
 }
 
 .monaco-workbench .part > .title > .title-label {
@@ -48,8 +46,7 @@
 }
 
 .monaco-workbench .part > .title > .title-label {
-	/* MEMBRANE: reduce padding next to back to Navigator button */
-	padding-left: 4px;
+	padding-left: 12px;
 }
 
 .monaco-workbench .part > .title > .title-label h2 {
