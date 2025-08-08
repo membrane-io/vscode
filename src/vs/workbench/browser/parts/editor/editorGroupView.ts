@@ -5,7 +5,9 @@
 
 import 'vs/css!./media/editorgroupview';
 import { EditorGroupModel, IEditorOpenOptions, IGroupModelChangeEvent, ISerializedEditorGroupModel, isGroupEditorCloseEvent, isGroupEditorOpenEvent, isSerializedEditorGroupModel } from 'vs/workbench/common/editor/editorGroupModel';
-import { GroupIdentifier, CloseDirection, IEditorCloseEvent, IEditorPane, SaveReason, IEditorPartOptionsChangeEvent, EditorsOrder, IVisibleEditorPane, EditorResourceAccessor, EditorInputCapabilities, IUntypedEditorInput, DEFAULT_EDITOR_ASSOCIATION, SideBySideEditor, EditorCloseContext, IEditorWillMoveEvent, IEditorWillOpenEvent, IMatchEditorOptions, GroupModelChangeKind, IActiveEditorChangeEvent, IFindEditorOptions, IToolbarActions } from 'vs/workbench/common/editor';
+// MEMBRANE: Removed EditorServiceImpl DEFAULT_EDITOR_ASSOCIATION
+// Not needed because we disabled the listener for double clicks on empty editor
+import { GroupIdentifier, CloseDirection, IEditorCloseEvent, IEditorPane, SaveReason, IEditorPartOptionsChangeEvent, EditorsOrder, IVisibleEditorPane, EditorResourceAccessor, EditorInputCapabilities, IUntypedEditorInput, SideBySideEditor, EditorCloseContext, IEditorWillMoveEvent, IEditorWillOpenEvent, IMatchEditorOptions, GroupModelChangeKind, IActiveEditorChangeEvent, IFindEditorOptions, IToolbarActions } from 'vs/workbench/common/editor';
 import { ActiveEditorGroupLockedContext, ActiveEditorDirtyContext, EditorGroupEditorsCountContext, ActiveEditorStickyContext, ActiveEditorPinnedContext, ActiveEditorLastInGroupContext, ActiveEditorFirstInGroupContext, ResourceContextKey, applyAvailableEditorIds, ActiveEditorAvailableEditorIdsContext, ActiveEditorCanSplitInGroupContext, SideBySideEditorActiveContext } from 'vs/workbench/common/contextkeys';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { SideBySideEditorInput } from 'vs/workbench/common/editor/sideBySideEditorInput';
@@ -28,7 +30,9 @@ import { DisposableStore, MutableDisposable, toDisposable } from 'vs/base/common
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { DeferredPromise, Promises, RunOnceWorker } from 'vs/base/common/async';
 import { EventType as TouchEventType, GestureEvent } from 'vs/base/browser/touch';
-import { IEditorGroupsView, IEditorGroupView, fillActiveEditorViewState, EditorServiceImpl, IEditorGroupTitleHeight, IInternalEditorOpenOptions, IInternalMoveCopyOptions, IInternalEditorCloseOptions, IInternalEditorTitleControlOptions, IEditorPartsView } from 'vs/workbench/browser/parts/editor/editor';
+// MEMBRANE: Removed EditorServiceImpl
+// Not needed because we disabled the listener for double clicks on empty editor
+import { IEditorGroupsView, IEditorGroupView, fillActiveEditorViewState, IEditorGroupTitleHeight, IInternalEditorOpenOptions, IInternalMoveCopyOptions, IInternalEditorCloseOptions, IInternalEditorTitleControlOptions, IEditorPartsView } from 'vs/workbench/browser/parts/editor/editor';
 import { ActionBar } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IAction, SubmenuAction } from 'vs/base/common/actions';
@@ -36,7 +40,8 @@ import { IMenuService, MenuId } from 'vs/platform/actions/common/actions';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { createAndFillInActionBarActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+// MEMBRANE: Not needed because we disabled the listener for double clicks on empty editor
+// import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { hash } from 'vs/base/common/hash';
 import { getMimeTypes } from 'vs/editor/common/services/languagesAssociations';
 import { extname, isEqual } from 'vs/base/common/resources';
@@ -151,7 +156,8 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		@IMenuService private readonly menuService: IMenuService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IFileDialogService private readonly fileDialogService: IFileDialogService,
-		@IEditorService private readonly editorService: EditorServiceImpl,
+		// MEMBRANE: Not needed because we disabled the listener for double clicks on empty editor
+		// @IEditorService private readonly editorService: EditorServiceImpl,
 		@IFilesConfigurationService private readonly filesConfigurationService: IFilesConfigurationService,
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@ILogService private readonly logService: ILogService,
@@ -331,19 +337,20 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	private registerContainerListeners(): void {
 
 		// Open new file via doubleclick on empty container
-		this._register(addDisposableListener(this.element, EventType.DBLCLICK, e => {
-			if (this.isEmpty) {
-				EventHelper.stop(e);
+		// MEMBRANE: Disable double-click to create new untitled file
+		// this._register(addDisposableListener(this.element, EventType.DBLCLICK, e => {
+		// 	if (this.isEmpty) {
+		// 		EventHelper.stop(e);
 
-				this.editorService.openEditor({
-					resource: undefined,
-					options: {
-						pinned: true,
-						override: DEFAULT_EDITOR_ASSOCIATION.id
-					}
-				}, this.id);
-			}
-		}));
+		// 		this.editorService.openEditor({
+		// 			resource: undefined,
+		// 			options: {
+		// 				pinned: true,
+		// 				override: DEFAULT_EDITOR_ASSOCIATION.id
+		// 			}
+		// 		}, this.id);
+		// 	}
+		// }));
 
 		// Close empty editor group via middle mouse click
 		this._register(addDisposableListener(this.element, EventType.AUXCLICK, e => {
