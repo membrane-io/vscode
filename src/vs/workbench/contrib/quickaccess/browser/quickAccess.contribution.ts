@@ -14,7 +14,8 @@ import { KeyMod } from 'vs/base/common/keyCodes';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { inQuickPickContext, getQuickNavigateHandler } from 'vs/workbench/browser/quickaccess';
 import { KeybindingsRegistry, KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
+// MEMBRANE: Not needed because we are disabling the command palette
+// import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 
 //#region Quick Access Proviers
 
@@ -97,15 +98,16 @@ MenuRegistry.appendMenuItem(MenuId.GlobalActivity, {
 	order: 1
 });
 
-MenuRegistry.appendMenuItem(MenuId.EditorContext, {
-	group: 'z_commands',
-	when: EditorContextKeys.editorSimpleInput.toNegated(),
-	command: {
-		id: ShowAllCommandsAction.ID,
-		title: localize('commandPalette', "Command Palette..."),
-	},
-	order: 1
-});
+// MEMBRANE: Remove command palette from all menus
+// MenuRegistry.appendMenuItem(MenuId.EditorContext, {
+// 	group: 'z_commands',
+// 	when: EditorContextKeys.editorSimpleInput.toNegated(),
+// 	command: {
+// 		id: ShowAllCommandsAction.ID,
+// 		title: localize('commandPalette', "Command Palette..."),
+// 	},
+// 	order: 1
+// });
 
 //#endregion
 
@@ -113,7 +115,8 @@ MenuRegistry.appendMenuItem(MenuId.EditorContext, {
 //#region Workbench actions and commands
 
 registerAction2(ClearCommandHistoryAction);
-registerAction2(ShowAllCommandsAction);
+// MEMBRANE: Disable command palette
+// registerAction2(ShowAllCommandsAction);
 registerAction2(OpenViewPickerAction);
 registerAction2(QuickAccessViewPickerAction);
 
