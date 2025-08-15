@@ -143,14 +143,24 @@ export class BrowserMain extends Disposable {
 			}
 		});
 
-		// MEMBRANE: Listen for event emitted by product tour to show package installer
-		// We do it here instead of workbench.ts (or elsewhere) because we have access to both:
-		// (1) window, and (2) the command service
+		// MEMBRANE: We listen here instead of workbench.ts (or elsewhere) because we have access to both:
+		// (1) window, and (2) the command service.
 		instantiationService.invokeFunction(accessor => {
 			const commandService = accessor.get(ICommandService);
+			// MEMBRANE: Listen for event emitted by product tour to show package installer.
 			// eslint-disable-next-line no-restricted-globals
 			window.addEventListener('tour:show-learn-membrane', async () => {
 				await commandService.executeCommand('membrane.installPackage', 'membrane/learn-membrane');
+			});
+			// MEMBRANE: Listen for event from Gaze.tsx. 
+			// This bridges the communication from gaze to extension commands.
+			// eslint-disable-next-line no-restricted-globals
+			window.addEventListener('gazeToExtension', async (event: any) => {
+				try {
+					await commandService.executeCommand('membrane.gazeToExtension', event.detail);
+				} catch (error) {
+					console.error('Failed to execute command:', error);
+				}
 			});
 		});
 
