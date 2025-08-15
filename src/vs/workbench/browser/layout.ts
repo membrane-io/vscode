@@ -639,10 +639,19 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			resetLayout: Boolean(this.layoutOptions?.resetLayout)
 		});
 
-		// MEMBRANE: hide activitybar, statusbar by default
+		// MEMBRANE: hide sidebar and statusbar by default (overrides user preferences)
 		// These defaults are also set in `const LayoutStateKeys` in this same file
 		// Setting them here will reset them to hidden upon login if a user toggled them to visible
 		this.stateModel.setRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN, true);
+		this.stateModel.setRuntimeValue(LayoutStateKeys.STATUSBAR_HIDDEN, true);
+
+		// MEMBRANE: More config updates to clean up the editor (overrides user settings)
+		// MEMBRANE: NOTE(gazetoide): As we replace VSCode settings and move to a simpler settings UI in gaze
+		// this list will probably grow. The goal is to cut down the settings to our few chosen options and force
+		// everything else to good defaults.
+		// MEMBRANE: For activity bar position, make sure it is set to 'top'
+		this.configurationService.updateValue('workbench.activityBar.location', 'top');
+		this.configurationService.updateValue('editor.minimap.enabled', false);
 
 		this.stateModel.onDidChangeState(change => {
 			if (change.key === LayoutStateKeys.ACTIVITYBAR_HIDDEN) {
@@ -2756,14 +2765,14 @@ const LayoutStateKeys = {
 	AUXILIARYBAR_EMPTY: new InitializationStateKey<boolean>('auxiliaryBar.empty', StorageScope.PROFILE, StorageTarget.MACHINE, false),
 
 	// Part Positions
-	SIDEBAR_POSITON: new RuntimeStateKey<Position>('sideBar.position', StorageScope.WORKSPACE, StorageTarget.MACHINE, Position.LEFT),
+	SIDEBAR_POSITON: new RuntimeStateKey<Position>('sideBar.position', StorageScope.WORKSPACE, StorageTarget.MACHINE, Position.RIGHT),
 	PANEL_POSITION: new RuntimeStateKey<Position>('panel.position', StorageScope.WORKSPACE, StorageTarget.MACHINE, Position.BOTTOM),
 	PANEL_ALIGNMENT: new RuntimeStateKey<PanelAlignment>('panel.alignment', StorageScope.PROFILE, StorageTarget.USER, 'center'),
 
 	// Part Visibility
-	// MEMBRANE: Do not hide activitybar by default
+	// MEMBRANE: Hide activitybar by default
 	ACTIVITYBAR_HIDDEN: new RuntimeStateKey<boolean>('activityBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true, true),
-	// MEMBRANE: Do not hide sidebar by default
+	// MEMBRANE: Hide sidebar by default
 	SIDEBAR_HIDDEN: new RuntimeStateKey<boolean>('sideBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	EDITOR_HIDDEN: new RuntimeStateKey<boolean>('editor.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
 	PANEL_HIDDEN: new RuntimeStateKey<boolean>('panel.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
