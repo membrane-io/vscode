@@ -131,7 +131,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{
 			id: 'membrane.extensionToGaze',
 			handler: (response) => {
-				console.log('Workbench: Extension to Next.js:', response);
 				window.dispatchEvent(
 					new CustomEvent('extensionToGaze', {
 						detail: response,
@@ -162,36 +161,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	// 	icon: 'home',
 	// 	title: 'Membrane Home',
 	// };
-
-	window.addEventListener('gazeToExtension', async (event: Event) => {
-		const customEvent = event as CustomEvent;
-		console.log('Workbench: Event received:', customEvent.detail);
-
-		try {
-			// Use VSCode's built-in command service
-			const { ICommandService } = await import(
-				'../../../platform/commands/common/commands.js'
-			);
-			const { StandaloneServices } = await import(
-				'../../../editor/standalone/browser/standaloneServices.js'
-			);
-
-			const commandService = StandaloneServices.get(ICommandService);
-			if (commandService) {
-				await commandService.executeCommand(
-					'membrane.gazeToExtension',
-					customEvent.detail,
-				);
-				console.log('Workbench: Command executed successfully');
-			} else {
-				console.error('Command service not available');
-			}
-		} catch (error) {
-			console.error('Failed to execute command:', error);
-		}
-	});
-
-	console.log('Workbench: Setup complete');
 
 	const domElement = window.vscodeTargetContainer || mainWindow.document.body;
 	create(domElement, config);
