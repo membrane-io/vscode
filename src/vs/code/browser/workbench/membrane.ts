@@ -1,7 +1,6 @@
 // MEMBRANE: disable ESLint rule for using window below
 /* eslint-disable no-restricted-globals */
-import { ISecretStorageProvider } from 'vs/platform/secrets/common/secrets';
-export class SecretStorageProvider implements ISecretStorageProvider {
+export class SecretStorageProvider {
 	public type: 'persisted';
 	private static instance: SecretStorageProvider;
 	public getAuthToken: () => Promise<string>;
