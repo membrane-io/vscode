@@ -493,18 +493,18 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 			},
 			'workbench.statusBar.visible': {
 				'type': 'boolean',
-				'default': true,
+				// MEMBRANE: Set default to false
+				'default': false,
 				'description': localize('statusBarVisibility', "Controls the visibility of the status bar at the bottom of the workbench.")
 			},
 			[LayoutSettings.ACTIVITY_BAR_LOCATION]: {
 				'type': 'string',
-				'enum': ['side', 'top', 'hidden'],
-				'default': 'side',
-				'markdownDescription': localize({ comment: ['This is the description for a setting'], key: 'activityBarLocation' }, "Controls the location of the Activity Bar. It can either show to the `side` or `top` of the Primary Side Bar or `hidden`."),
+				'enum': ['top'],
+				// MEMBRANE: Set default to top
+				'default': 'top',
+				'markdownDescription': localize({ comment: ['This is the description for a setting'], key: 'activityBarLocation' }, "Controls the location of the Activity Bar. It can only show to the `top` of the Primary Side Bar."),
 				'enumDescriptions': [
-					localize('workbench.activityBar.location.side', "Show the Activity Bar to the side of the Primary Side Bar."),
 					localize('workbench.activityBar.location.top', "Show the Activity Bar on top of the Primary Side Bar."),
-					localize('workbench.activityBar.location.hide', "Hide the Activity Bar.")
 				],
 			},
 			'workbench.activityBar.iconClickBehavior': {
