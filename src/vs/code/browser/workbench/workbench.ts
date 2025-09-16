@@ -64,33 +64,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{
 			id: 'membrane.advanceTour', handler: (cmdArgs) => window.dispatchEvent(new Event(`tour:${cmdArgs.trigger}`))
 		},
-		// For product tour, send coordinates of gaze rects to the web app
-		{
-			id: 'membrane.reportGazeRect', handler: (cmdArgs) => {
-				// cmdArgs { gaze_instance, rect_id, x, y, width, height }
-				window.dispatchEvent(
-					new CustomEvent('gaze:report-rect', { detail: cmdArgs }),
-				);
-			},
-		},
-		{
-			id: 'membrane.reportOverlayRects',
-			handler: (cmdArgs) => {
-				// cmdArgs { gaze_instance, overlay_id, rects_json }
-				window.dispatchEvent(
-					new CustomEvent('gaze:report-overlay-rects', { detail: cmdArgs }),
-				);
-			},
-		},
-		{
-			id: 'membrane.reportModalState',
-			handler: (cmdArgs) => {
-				// cmdArgs { gaze_instance, element_id, has_modal }
-				window.dispatchEvent(
-					new CustomEvent('gaze:modal-state', { detail: cmdArgs }),
-				);
-			},
-		},
 		// For extension panels to bubble up errors
 		{
 			id: 'membrane.reportError',
