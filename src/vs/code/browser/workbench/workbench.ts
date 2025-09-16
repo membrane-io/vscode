@@ -78,35 +78,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 				window.dispatchEvent(new Event(`tour:${cmdArgs.trigger}`));
 			}
 		},
-		// For product tour, send coordinates of gaze rects to the web app
-		{
-			id: 'membrane.reportGazeRect', handler: (...args: unknown[]) => {
-				// cmdArgs { gaze_instance, rect_id, x, y, width, height }
-				const cmdArgs = args[0] as { gaze_instance: string; rect_id: string; x: number; y: number; width: number; height: number };
-				window.dispatchEvent(
-					new CustomEvent('gaze:report-rect', { detail: cmdArgs }),
-				);
-			},
-		},
-		{
-			id: 'membrane.reportOverlayRects',
-			handler: (...args: unknown[]) => {
-				// cmdArgs { gaze_instance, overlay_id, rects_json }
-				const cmdArgs = args[0] as { gaze_instance: string; overlay_id: string; rects_json: string };
-				window.dispatchEvent(
-					new CustomEvent('gaze:report-overlay-rects', { detail: cmdArgs }),
-				);
-			},
-		},
-		{
-			id: 'membrane.reportModalState',
-			handler: (cmdArgs) => {
-				// cmdArgs { gaze_instance, element_id, has_modal }
-				window.dispatchEvent(
-					new CustomEvent('gaze:modal-state', { detail: cmdArgs }),
-				);
-			},
-		},
 		// For extension panels to bubble up errors
 		{
 			id: 'membrane.reportError',
