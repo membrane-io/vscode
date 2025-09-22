@@ -12,7 +12,8 @@ import { IProductService } from 'vs/platform/product/common/productService';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { IDialogsModel, IDialogViewItem } from 'vs/workbench/common/dialogs';
-import { BrowserDialogHandler } from 'vs/workbench/browser/parts/dialogs/dialogHandler';
+// MEMBRANE: Use our own dialog handler.
+import { MembraneDialogHandler } from 'vs/workbench/browser/parts/dialogs/membraneDialogHandler';
 import { DialogService } from 'vs/workbench/services/dialogs/common/dialogService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { Disposable } from 'vs/base/common/lifecycle';
@@ -35,7 +36,8 @@ export class DialogHandlerContribution extends Disposable implements IWorkbenchC
 	) {
 		super();
 
-		this.impl = new BrowserDialogHandler(logService, layoutService, keybindingService, instantiationService, productService, clipboardService);
+		// MEMBRANE: Use our own dialog handler.
+		this.impl = new MembraneDialogHandler(logService, layoutService, productService, clipboardService);
 
 		this.model = (this.dialogService as DialogService).model;
 

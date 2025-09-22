@@ -29,7 +29,9 @@ import { NotificationsAlerts } from 'vs/workbench/browser/parts/notifications/no
 import { NotificationsStatus } from 'vs/workbench/browser/parts/notifications/notificationsStatus';
 import { NotificationsTelemetry } from 'vs/workbench/browser/parts/notifications/notificationsTelemetry';
 import { registerNotificationCommands } from 'vs/workbench/browser/parts/notifications/notificationsCommands';
-import { NotificationsToasts } from 'vs/workbench/browser/parts/notifications/notificationsToasts';
+// MEMBRANE: Using our own toasts.
+// import { NotificationsToasts } from 'vs/workbench/browser/parts/notifications/notificationsToasts';
+import { MembraneNotificationsToasts } from 'vs/workbench/browser/parts/notifications/membraneNotificationsToasts';
 import { setARIAContainer } from 'vs/base/browser/ui/aria/aria';
 import { FontMeasurements } from 'vs/editor/browser/config/fontMeasurements';
 import { BareFontInfo } from 'vs/editor/common/config/fontInfo';
@@ -384,7 +386,8 @@ export class Workbench extends Layout {
 
 		// Instantiate Notification components
 		const notificationsCenter = this._register(instantiationService.createInstance(NotificationsCenter, this.mainContainer, notificationService.model));
-		const notificationsToasts = this._register(instantiationService.createInstance(NotificationsToasts, this.mainContainer, notificationService.model));
+		// MEMBRANE: Using our own toasts.
+		const notificationsToasts = this._register(instantiationService.createInstance(MembraneNotificationsToasts, notificationService.model));
 		this._register(instantiationService.createInstance(NotificationsAlerts, notificationService.model));
 		const notificationsStatus = instantiationService.createInstance(NotificationsStatus, notificationService.model);
 		this._register(instantiationService.createInstance(NotificationsTelemetry));
