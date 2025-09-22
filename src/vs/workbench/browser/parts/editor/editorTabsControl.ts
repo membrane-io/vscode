@@ -9,8 +9,7 @@ import { applyDragImage, DataTransfers } from 'vs/base/browser/dnd';
 import { Dimension, getActiveWindow, getWindow, isMouseEvent } from 'vs/base/browser/dom';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 // MEMBRANE: hide editor tab actions (e.g. Split Editor, More Actions)
-// import { prepareActions } from 'vs/base/browser/ui/actionbar/actionbar';
-import { ActionsOrientation, IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
+import { prepareActions, ActionsOrientation, IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IAction, ActionRunner } from 'vs/base/common/actions';
 import { ResolvedKeybinding } from 'vs/base/common/keybindings';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
@@ -332,10 +331,10 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const editorActions = this.groupView.createEditorActions(this.editorActionsDisposables);
 		this.editorActionsDisposables.add(editorActions.onDidChange(() => this.updateEditorActionsToolbar()));
 
-		// MEMBRANE: hide editor tab actions (e.g. Split Editor, More Actions)
-		// const editorActionsToolbar = assertIsDefined(this.editorActionsToolbar);
-		// const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
-		// editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
+		// MEMBRANE: No longer hiding editor tab actions (e.g. Split Editor, More Actions).
+		const editorActionsToolbar = assertIsDefined(this.editorActionsToolbar);
+		const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
+		editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
 	}
 
 	protected abstract prepareEditorActions(editorActions: IToolbarActions): IToolbarActions;
