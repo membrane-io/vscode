@@ -112,7 +112,7 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 			alias: {
 				// MEMBRANE: ts-plugin is bundled inside typescript-language-features since vscode web doesn't support the
 				// normal typescriptServerPlugins extension setting.
-				'./platform/vscode': path.resolve(__dirname, '../../ts-plugin/src/platform/browser.ts'),
+				'./platform/vscode': path.resolve(import.meta.dirname, '../../ts-plugin/src/platform/browser.ts'),
 			},
 			mainFields: ['browser', 'module', 'main'],
 			extensions: ['.ts', '.js'], // support ts-files and js-files
@@ -149,7 +149,7 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 							}
 						},
 						{
-							loader: path.resolve(__dirname, 'mangle-loader.js'),
+							loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
 							options: {
 								configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
 							},

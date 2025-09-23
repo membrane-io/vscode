@@ -165,6 +165,24 @@ export class BrowserMain extends Disposable {
 					console.error('Failed to execute command:', error);
 				}
 			});
+
+			// Listen for dialog and notification responses from Gaze.tsx.
+			mainWindow.addEventListener('gazeToWorkbench', (event: Event) => {
+				const customEvent = event as CustomEvent;
+				if (customEvent.detail.type === 'vscode_dialog_response') {
+					// Forward dialog response to the dialog system
+					const windowWithHandler = mainWindow as typeof mainWindow & { membraneDialogResponseHandler?: (response: unknown) => void };
+					if (windowWithHandler.membraneDialogResponseHandler) {
+						windowWithHandler.membraneDialogResponseHandler(customEvent.detail.response);
+					}
+				} else if (customEvent.detail.type === 'vscode_notification_action') {
+					// Forward notification action to the notification system
+					const windowWithHandler = mainWindow as typeof mainWindow & { membraneNotificationActionHandler?: (response: unknown) => void };
+					if (windowWithHandler.membraneNotificationActionHandler) {
+						windowWithHandler.membraneNotificationActionHandler(customEvent.detail);
+					}
+				}
+			});
 		});
 
 		// Return API Facade

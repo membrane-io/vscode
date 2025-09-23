@@ -273,6 +273,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const editorActions = this.groupView.createEditorActions(this.editorActionsDisposables);
 		this.editorActionsDisposables.add(editorActions.onDidChange(() => this.updateEditorActionsToolbar()));
 
+		// MEMBRANE: No longer hiding editor tab actions (e.g. Split Editor, More Actions).
 		const editorActionsToolbar = assertReturnsDefined(this.editorActionsToolbar);
 		const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
 		editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));

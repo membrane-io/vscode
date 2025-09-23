@@ -11,7 +11,8 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
 import { IDialogsModel, IDialogViewItem } from '../../../common/dialogs.js';
-import { BrowserDialogHandler } from './dialogHandler.js';
+// MEMBRANE: Use our own dialog handler.
+import { MembraneDialogHandler } from './membraneDialogHandler.js';
 import { DialogService } from '../../../services/dialogs/common/dialogService.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -42,7 +43,9 @@ export class DialogHandlerContribution extends Disposable implements IWorkbenchC
 	) {
 		super();
 
-		this.impl = new Lazy(() => new BrowserDialogHandler(logService, layoutService, keybindingService, instantiationService, clipboardService, openerService, markdownRendererService));
+		// MEMBRANE: Use our own dialog handler.
+		this.impl = new Lazy(() => new MembraneDialogHandler(logService, layoutService, productService, clipboardService));
+
 		this.model = (this.dialogService as DialogService).model;
 
 		this._register(this.model.onWillShowDialog(() => {
