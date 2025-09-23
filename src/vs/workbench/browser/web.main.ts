@@ -152,7 +152,7 @@ export class BrowserMain extends Disposable {
 			window.addEventListener('tour:show-learn-membrane', async () => {
 				await commandService.executeCommand('membrane.installPackage', 'membrane/learn-membrane');
 			});
-			// MEMBRANE: Listen for event from Gaze.tsx. 
+			// MEMBRANE: Listen for event from Gaze.tsx.
 			// This bridges the communication from gaze to extension commands.
 			// eslint-disable-next-line no-restricted-globals
 			window.addEventListener('gazeToExtension', async (event: any) => {
@@ -160,6 +160,23 @@ export class BrowserMain extends Disposable {
 					await commandService.executeCommand('membrane.gazeToExtension', event.detail);
 				} catch (error) {
 					console.error('Failed to execute command:', error);
+				}
+			});
+
+			// Listen for dialog and notification responses from Gaze.tsx.
+			// eslint-disable-next-line no-restricted-globals
+			mainWindow.addEventListener('gazeToWorkbench', (event: Event) => {
+				const customEvent = event as CustomEvent;
+				if (customEvent.detail.type === 'vscode_dialog_response') {
+					// Forward dialog response to the dialog system
+					if ((mainWindow as any).membraneDialogResponseHandler) {
+						(mainWindow as any).membraneDialogResponseHandler(customEvent.detail.response);
+					}
+				} else if (customEvent.detail.type === 'vscode_notification_action') {
+					// Forward notification action to the notification system
+					if ((mainWindow as any).membraneNotificationActionHandler) {
+						(mainWindow as any).membraneNotificationActionHandler(customEvent.detail);
+					}
 				}
 			});
 		});
