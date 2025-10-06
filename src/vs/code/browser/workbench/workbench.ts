@@ -31,10 +31,20 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		['membrane.membrane', channel.port2],
 	]);
 
-	// Expose the remote port globally so ide/gaze.tsx can access it directly
-	window.membraneWorkbenchPort = channel.port1;
+	// Use secure handoff pattern to pass port to IDE
+	const handoffKey = `__membraneWorkbenchPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
+
+	// Create handoff function in global scope
+	window[handoffKey] = (callback: (port: MessagePort) => void) => {
+		delete window[handoffKey]; // Immediate cleanup
+		callback(channel.port1);
+	};
+
 	// Start the port BEFORE setting up the message handler
 	channel.port1.start();
+
+	// Store handoff key for IDE to use
+	window.membraneWorkbenchPortHandoffKey = handoffKey;
 
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
