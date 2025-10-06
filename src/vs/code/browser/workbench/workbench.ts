@@ -24,6 +24,18 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		config = await result.json();
 	}
 
+	// MEMBRANE: Create a MessageChannel to communicate with the extension
+	const channel = new MessageChannel();
+	// local port is port2, remote port is port1
+	config.messagePorts = new Map([
+		['membrane.membrane', channel.port2],
+	]);
+
+	// Expose the remote port globally so ide/gaze.tsx can access it directly
+	window.membraneWorkbenchPort = channel.port1;
+	// Start the port BEFORE setting up the message handler
+	channel.port1.start();
+
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
 	const extensionUrl = {
