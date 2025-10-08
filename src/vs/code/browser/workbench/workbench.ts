@@ -35,16 +35,24 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	const handoffKey = `__membraneWorkbenchPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
 
 	// Create handoff function in global scope
-	window[handoffKey] = (callback: (port: MessagePort) => void) => {
+	window[handoffKey] = (callback: (port: MessagePort, dialogPort?: MessagePort) => void) => {
 		delete window[handoffKey]; // Immediate cleanup
-		callback(channel.port1);
+		callback(channel.port1, dialogChannel.port2);
 	};
 
-	// Start the port BEFORE setting up the message handler
-	channel.port1.start();
+	// MEMBRANE: Create separate MessageChannel for dialogs
+	const dialogChannel = new MessageChannel();
+	const dialogHandoffKey = `__membraneDialogPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
 
-	// Store handoff key for IDE to use
+	// Create handoff function for dialog port
+	window[dialogHandoffKey] = (callback: (dialogPort: MessagePort) => void) => {
+		delete window[dialogHandoffKey]; // Immediate cleanup
+		callback(dialogChannel.port1);
+	};
+
+	// Store handoff keys for IDE and dialog to use
 	window.membraneWorkbenchPortHandoffKey = handoffKey;
+	window.membraneDialogPortHandoffKey = dialogHandoffKey;
 
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
