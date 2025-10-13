@@ -1,13 +1,7 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
 declare const window: any;
 
 export class MembranePortManager {
-	private static dialogPort: MessagePort | null = null;
-	private static isInitialized = false;
+	private static dialogsPort: MessagePort | null = null;
 	private static notificationResponseHandler: ((response: any) => void) | null = null;
 	private static dialogResponseHandler: ((response: any) => void) | null = null;
 
@@ -19,66 +13,39 @@ export class MembranePortManager {
 		MembranePortManager.dialogResponseHandler = handler;
 	}
 
-	static initializeDialogPort(): void {
-		if (MembranePortManager.isInitialized) {
+	static ensureInitialized(): void {
+		if (MembranePortManager.dialogsPort) {
 			return; // Already initialized
 		}
 
-		const dialogHandoffKey = window.membraneDialogPortHandoffKey;
-		if (dialogHandoffKey && window[dialogHandoffKey]) {
-			window[dialogHandoffKey]((dialogPort: MessagePort) => {
-				MembranePortManager.dialogPort = dialogPort;
-				MembranePortManager.isInitialized = true;
+		MembranePortManager.dialogsPort = window.gazeDialogsPort;
 
-				// Set up listener for dialog and notification responses
-				dialogPort.onmessage = (event) => {
-					if (event.data.messageType === 'membraneDialogResponse') {
-						MembranePortManager.handleDialogResponse(event.data);
-					} else if (event.data.messageType === 'membraneNotificationResponse') {
-						MembranePortManager.handleNotificationResponse(event.data);
-					}
-				};
-			});
-		} else {
-			console.log('No handoff key or function available');
-		}
+		// Set up listener for dialog and notification responses
+		MembranePortManager.dialogsPort!.onmessage = (event) => {
+			try {
+				if (event.data.messageType === 'membraneDialogResponse') {
+					MembranePortManager.dialogResponseHandler!(event.data);
+				} else if (event.data.messageType === 'membraneNotificationResponse') {
+					MembranePortManager.notificationResponseHandler!(event.data);
+				}
+			} catch (error) {
+				console.error(`Error handling ${event.data.messageType} message:`, error);
+			}
+		};
+
 	}
 
 	static sendMessage(messageType: string, data: any): void {
-		if (!MembranePortManager.dialogPort) {
-			MembranePortManager.initializeDialogPort();
-
-			if (!MembranePortManager.dialogPort) {
-				return;
-			}
-		}
-
 		try {
+			MembranePortManager.ensureInitialized();
 			const message = {
 				messageType,
 				...data
 			};
-			MembranePortManager.dialogPort.postMessage(message);
+			MembranePortManager.dialogsPort!.postMessage(message);
 		} catch (error) {
 			console.error(`Error sending ${messageType} message:`, error);
 		}
 	}
 
-	static handleDialogResponse(response: any): void {
-		// Use registered handler if available
-		if (MembranePortManager.dialogResponseHandler) {
-			MembranePortManager.dialogResponseHandler(response);
-		} else {
-			console.log('No dialog response handler registered');
-		}
-	}
-
-	static handleNotificationResponse(response: any): void {
-		// Use registered handler if available
-		if (MembranePortManager.notificationResponseHandler) {
-			MembranePortManager.notificationResponseHandler(response);
-		} else {
-			console.log('No notification response handler registered');
-		}
-	}
 }

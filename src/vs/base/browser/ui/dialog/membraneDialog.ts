@@ -35,7 +35,7 @@ export interface MembraneDialogResponse {
 }
 
 export class MembraneDialog extends Disposable {
-	private static pendingDialogs = new Map<string, {
+	private static pendingResponses = new Map<string, {
 		resolve: (result: IDialogResult) => void;
 		reject: (error: Error) => void;
 	}>();
@@ -44,9 +44,9 @@ export class MembraneDialog extends Disposable {
 
 	// Handle dialog responses from Gaze
 	private handleDialogResponse(response: MembraneDialogResponse): void {
-		const pending = MembraneDialog.pendingDialogs.get(response.id);
+		const pending = MembraneDialog.pendingResponses.get(response.id);
 		if (pending) {
-			MembraneDialog.pendingDialogs.delete(response.id);
+			MembraneDialog.pendingResponses.delete(response.id);
 			pending.resolve({
 				button: response.button,
 				checkboxChecked: response.checkboxChecked,
@@ -73,7 +73,7 @@ export class MembraneDialog extends Disposable {
 	async show(): Promise<IDialogResult> {
 		return new Promise<IDialogResult>((resolve, reject) => {
 			// Store the promise resolvers
-			MembraneDialog.pendingDialogs.set(this.dialogId, { resolve, reject });
+			MembraneDialog.pendingResponses.set(this.dialogId, { resolve, reject });
 
 			// Prepare the message to send to the client
 			const dialogMessage: MembraneDialogMessage = {
@@ -89,17 +89,15 @@ export class MembraneDialog extends Disposable {
 				iconType: this.options.type
 			};
 
-			// Initialiwze dialog port if not already done
-			MembranePortManager.initializeDialogPort();
 
 			// Send via MessagePort using shared port manager
 			MembranePortManager.sendMessage('membraneDialog', dialogMessage);
 
 			// Set up timeout to prevent hanging dialogs
 			setTimeout(() => {
-				const pending = MembraneDialog.pendingDialogs.get(this.dialogId);
+				const pending = MembraneDialog.pendingResponses.get(this.dialogId);
 				if (pending) {
-					MembraneDialog.pendingDialogs.delete(this.dialogId);
+					MembraneDialog.pendingResponses.delete(this.dialogId);
 					// Default to cancel/close behavior
 					pending.resolve({
 						button: this.options.cancelId || 0,
@@ -151,7 +149,7 @@ export class MembraneDialog extends Disposable {
 		this.message = message;
 
 		// Send update to Gaze if dialog is currently showing
-		if (MembraneDialog.pendingDialogs.has(this.dialogId)) {
+		if (MembraneDialog.pendingResponses.has(this.dialogId)) {
 			MembranePortManager.sendMessage('membraneDialogUpdate', {
 				id: this.dialogId,
 				message: message
@@ -162,6 +160,6 @@ export class MembraneDialog extends Disposable {
 	override dispose(): void {
 		super.dispose();
 		// Clean up any pending dialog
-		MembraneDialog.pendingDialogs.delete(this.dialogId);
+		MembraneDialog.pendingResponses.delete(this.dialogId);
 	}
 }

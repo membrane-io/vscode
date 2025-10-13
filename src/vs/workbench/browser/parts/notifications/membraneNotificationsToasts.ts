@@ -44,8 +44,6 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 		this.notificationsToastsVisibleContextKey = NotificationsToastsVisibleContext.bindTo(contextKeyService);
 		this.registerListeners();
 
-		// Initialize port manager to set up notification response listener
-		MembranePortManager.initializeDialogPort();
 		// Register this instance as the notification response handler
 		MembranePortManager.setNotificationResponseHandler((response: any) => {
 			this.handleNotificationAction(response);
@@ -152,7 +150,6 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 		// Send notification via MembranePortManager
 
-		MembranePortManager.initializeDialogPort();
 		MembranePortManager.sendMessage('membraneNotification', {
 			type: 'toast',
 			id: `notification-${notificationId}`,
