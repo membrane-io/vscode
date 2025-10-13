@@ -6,7 +6,8 @@
 import { IDialogOptions, IDialogResult } from './dialog.js';
 import { Disposable } from '../../../common/lifecycle.js';
 import { generateUuid } from '../../../common/uuid.js';
-import { mainWindow } from '../../../browser/window.js';
+// import { mainWindow } from '../../../browser/window.js';
+import { MembranePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
 
 declare global {
 	interface Window {
@@ -46,6 +47,19 @@ export class MembraneDialog extends Disposable {
 
 	private readonly dialogId: string;
 
+	// Handle dialog responses from Gaze
+	private handleDialogResponse(response: MembraneDialogResponse): void {
+		const pending = MembraneDialog.pendingDialogs.get(response.id);
+		if (pending) {
+			MembraneDialog.pendingDialogs.delete(response.id);
+			pending.resolve({
+				button: response.button,
+				checkboxChecked: response.checkboxChecked,
+				values: response.values
+			});
+		}
+	}
+
 	constructor(
 		_container: HTMLElement,
 		private message: string,
@@ -55,20 +69,10 @@ export class MembraneDialog extends Disposable {
 		super();
 		this.dialogId = generateUuid();
 
-		// Set up global response handler if not already done
-		if (!mainWindow.membraneDialogResponseHandler) {
-			mainWindow.membraneDialogResponseHandler = (response: MembraneDialogResponse) => {
-				const pending = MembraneDialog.pendingDialogs.get(response.id);
-				if (pending) {
-					MembraneDialog.pendingDialogs.delete(response.id);
-					pending.resolve({
-						button: response.button,
-						checkboxChecked: response.checkboxChecked,
-						values: response.values
-					});
-				}
-			};
-		}
+		// Register this instance as the dialog response handler
+		MembranePortManager.setDialogResponseHandler((response: MembraneDialogResponse) => {
+			this.handleDialogResponse(response);
+		});
 	}
 
 	async show(): Promise<IDialogResult> {
@@ -90,10 +94,11 @@ export class MembraneDialog extends Disposable {
 				iconType: this.options.type
 			};
 
-			// Send to client via custom event (following your existing pattern)
-			mainWindow.dispatchEvent(new CustomEvent('membraneDialog', {
-				detail: dialogMessage
-			}));
+			// Initialiwze dialog port if not already done
+			MembranePortManager.initializeDialogPort();
+
+			// Send via MessagePort using shared port manager
+			MembranePortManager.sendMessage('membraneDialog', dialogMessage);
 
 			// Set up timeout to prevent hanging dialogs
 			setTimeout(() => {
@@ -152,12 +157,10 @@ export class MembraneDialog extends Disposable {
 
 		// Send update to Gaze if dialog is currently showing
 		if (MembraneDialog.pendingDialogs.has(this.dialogId)) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneDialogUpdate', {
-				detail: {
-					id: this.dialogId,
-					message: message
-				}
-			}));
+			MembranePortManager.sendMessage('membraneDialogUpdate', {
+				id: this.dialogId,
+				message: message
+			});
 		}
 	}
 

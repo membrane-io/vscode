@@ -13,7 +13,7 @@ import { NotificationsFilter, NotificationPriority, Severity } from '../../../..
 import { IntervalCounter } from '../../../../base/common/async.js';
 import { NotificationsToastsVisibleContext } from '../../../common/contextkeys.js';
 import { IContextKeyService, IContextKey } from '../../../../platform/contextkey/common/contextkey.js';
-import { mainWindow } from '../../../../base/browser/window.js';
+import { MembranePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
 
 declare global {
 	interface Window {
@@ -56,10 +56,12 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 		this.notificationsToastsVisibleContextKey = NotificationsToastsVisibleContext.bindTo(contextKeyService);
 		this.registerListeners();
 
-		// Set up handler for notification action responses from Gaze
-		mainWindow.membraneNotificationActionHandler = (response: MembraneNotificationActionResponse) => {
+		// Initialize port manager to set up notification response listener
+		MembranePortManager.initializeDialogPort();
+		// Register this instance as the notification response handler
+		MembranePortManager.setNotificationResponseHandler((response: MembraneNotificationActionResponse) => {
 			this.handleNotificationAction(response);
-		};
+		});
 	}
 
 	private registerListeners(): void {
@@ -160,14 +162,14 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 			})) || []
 		};
 
-		// Dispatch notification event
-		mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-			detail: {
-				type: 'toast',
-				id: `notification-${notificationId}`,
-				notification: notificationData
-			}
-		}));
+		// Send notification via MembranePortManager
+
+		MembranePortManager.initializeDialogPort();
+		MembranePortManager.sendMessage('membraneNotification', {
+			type: 'toast',
+			id: `notification-${notificationId}`,
+			notification: notificationData
+		});
 	}
 
 	private severityToString(severity: Severity): string {
@@ -195,13 +197,11 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 		if (item.id) {
 			this.activeNotifications.delete(item.id);
 
-			// Notify Gaze to hide the notification
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'hide',
-					id: `notification-${item.id}`
-				}
-			}));
+			// Notify Gaze to hide the notification via MembranePortManager
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'hide',
+				id: `notification-${item.id}`
+			});
 		}
 
 		// Update visibility if no more notifications
@@ -224,14 +224,12 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 	}
 
 	focus(): boolean {
-		// For keyboard navigation send focus request to Gaze
+		// For keyboard navigation send focus request to Gaze via MembranePortManager
 		if (this.activeNotifications.size > 0) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'focus',
-					target: 'first'
-				}
-			}));
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'focus',
+				target: 'first'
+			});
 			return true;
 		}
 		return false;
@@ -239,12 +237,10 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 	focusNext(): boolean {
 		if (this.activeNotifications.size > 0) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'focus',
-					target: 'next'
-				}
-			}));
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'focus',
+				target: 'next'
+			});
 			return true;
 		}
 		return false;
@@ -252,12 +248,10 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 	focusPrevious(): boolean {
 		if (this.activeNotifications.size > 0) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'focus',
-					target: 'previous'
-				}
-			}));
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'focus',
+				target: 'previous'
+			});
 			return true;
 		}
 		return false;
@@ -265,12 +259,10 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 	focusFirst(): boolean {
 		if (this.activeNotifications.size > 0) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'focus',
-					target: 'first'
-				}
-			}));
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'focus',
+				target: 'first'
+			});
 			return true;
 		}
 		return false;
@@ -278,12 +270,10 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 	focusLast(): boolean {
 		if (this.activeNotifications.size > 0) {
-			mainWindow.dispatchEvent(new CustomEvent('membraneNotification', {
-				detail: {
-					type: 'focus',
-					target: 'last'
-				}
-			}));
+			MembranePortManager.sendMessage('membraneNotification', {
+				type: 'focus',
+				target: 'last'
+			});
 			return true;
 		}
 		return false;
@@ -335,9 +325,5 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 	dispose(): void {
 		this.disposables.dispose();
 		this._onDidChangeVisibility.dispose();
-
-		if (mainWindow.membraneNotificationActionHandler) {
-			delete mainWindow.membraneNotificationActionHandler;
-		}
 	}
 }
