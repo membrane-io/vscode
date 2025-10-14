@@ -357,6 +357,8 @@ const allowedExtensions = [
 	'theme-solarized-light',
 	'typescript',
 	'typescript-language-features',
+	'vim',
+	'prettier-vscode',
 	'xml',
 	'yaml',
 ]
