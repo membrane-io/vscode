@@ -1245,6 +1245,5 @@
 	"lint-staged": {
 	  "*.{ts,js,json,md,yml}": "prettier --write",
 	  "*.ts": "eslint --fix"
-	},
-	"extensionKind": ["ui", "workspace", "web"]
+	}
 }

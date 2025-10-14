@@ -457,7 +457,7 @@
 	    }
 	  ]
 	},
-	"extensionKind": ["ui", "workspace", "web"],
+	"extensionKind": ["ui", "workspace"],
 	"__metadata": {
 	  "id": "96fa4707-6983-4489-b7c5-d5ffdfdcce90",
 	  "publisherDisplayName": "Prettier",
