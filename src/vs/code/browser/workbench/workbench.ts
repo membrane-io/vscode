@@ -24,35 +24,11 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		config = await result.json();
 	}
 
-	// MEMBRANE: Create a MessageChannel to communicate with the extension
-	const channel = new MessageChannel();
-	// local port is port2, remote port is port1
+	// Forward the MessagePort to the extension so it can directly talk to gaze
 	config.messagePorts = new Map([
-		['membrane.membrane', channel.port2],
+		['membrane.membrane', window.gazeExtensionPort],
 	]);
-
-	// Use secure handoff pattern to pass port to IDE
-	const handoffKey = `__membraneWorkbenchPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
-
-	// Create handoff function in global scope
-	window[handoffKey] = (callback: (port: MessagePort, dialogPort?: MessagePort) => void) => {
-		delete window[handoffKey]; // Immediate cleanup
-		callback(channel.port1, dialogChannel.port2);
-	};
-
-	// MEMBRANE: Create separate MessageChannel for dialogs
-	const dialogChannel = new MessageChannel();
-	const dialogHandoffKey = `__membraneDialogPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
-
-	// Create handoff function for dialog port
-	window[dialogHandoffKey] = (callback: (dialogPort: MessagePort) => void) => {
-		delete window[dialogHandoffKey]; // Immediate cleanup
-		callback(dialogChannel.port1);
-	};
-
-	// Store handoff keys for IDE and dialog to use
-	window.membraneWorkbenchPortHandoffKey = handoffKey;
-	window.membraneDialogPortHandoffKey = dialogHandoffKey;
+	delete window.gazeExtensionPort;
 
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
