@@ -332,6 +332,7 @@ const allowedExtensions = [
 	'css-language-features',
 	'diff',
 	'emmet',
+	'esbenp.prettier-vscode',
 	'handlebars',
 	'html',
 	'html-language-features',
@@ -357,8 +358,7 @@ const allowedExtensions = [
 	'theme-solarized-light',
 	'typescript',
 	'typescript-language-features',
-	'vim',
-	'prettier-vscode',
+	'vscodevim.vim',
 	'xml',
 	'yaml',
 ]
