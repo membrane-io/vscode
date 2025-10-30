@@ -20,3 +20,5 @@ vscode.db
 product.overrides.json
 *.snap.actual
 .vscode-test
+extensions/vscodevim.vim
+extensions/esbenp.prettier-vscode

@@ -31,6 +31,38 @@
 	"nodejsRepository": "https://nodejs.org",
 	"urlProtocol": "code-oss",
 	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
+	"webBuiltInExtensions": [
+		{
+			"name": "esbenp.prettier-vscode",
+			"version": "11.0.0",
+			"repo": "https://github.com/prettier/prettier-vscode",
+			"metadata": {
+				"id": "96fa4707-6983-4489-b7c5-d5ffdfdcce90",
+				"publisherId": {
+					"publisherId": "d16f4e39-2ffb-44e3-9c0d-79d873570e3a",
+					"publisherName": "esbenp",
+					"displayName": "Prettier",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "Prettier"
+			}
+		},
+		{
+			"name": "vscodevim.vim",
+			"version": "1.31.0",
+			"repo": "https://github.com/VSCodeVim/Vim",
+			"metadata": {
+				"id": "d96e79c6-8b25-4be3-8545-0e0ecefcae03",
+				"publisherId": {
+					"publisherId": "5ac7b42e-2fd2-4b2e-9846-c7e9f8e6e5f5",
+					"publisherName": "vscodevim",
+					"displayName": "VSCodeVim",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "VSCodeVim"
+			}
+		}
+	],
 	"builtInExtensions": [
 		{
 			"name": "ms-vscode.js-debug-companion",
