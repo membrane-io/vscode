@@ -9,6 +9,13 @@
 	height: 100%;
 }
 
+.monaco-workbench .part.editor > .content .editor-group-container .membrane-inner-shadow {
+	position: absolute;
+	inset: 0;
+	box-shadow: #11111199 0 0px 16px 0px inset;
+	pointer-events: none;
+}
+
 .monaco-workbench .part.editor > .content .editor-group-container.empty  {
 	opacity: 0.5; /* dimmed to indicate inactive state */
 }
@@ -65,7 +72,7 @@
 	background-image: url('./membrane-letterpress-dark.svg');
 }
 
-/* 
+/*
  * MEMBRANE: rm hc letterpress watermark
 
 .monaco-workbench.hc-light .part.editor > .content .editor-group-container .editor-group-watermark > .letterpress {

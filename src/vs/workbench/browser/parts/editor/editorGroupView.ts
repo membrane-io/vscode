@@ -131,6 +131,10 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	private readonly progressBar: ProgressBar;
 
 	private readonly editorContainer: HTMLElement;
+
+	// MEMBRANE: Inner shadow
+	private readonly innerShadow: HTMLElement;
+
 	private readonly editorPane: EditorPanes;
 
 	private readonly disposedEditorsWorker = this._register(new RunOnceWorker<EditorInput>(editors => this.handleDisposedEditors(editors), 0));
@@ -220,6 +224,11 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			this.editorContainer = document.createElement('div');
 			this.editorContainer.classList.add('editor-container');
 			this.element.appendChild(this.editorContainer);
+
+			// MEMBRANE: Inner shadow
+			this.innerShadow = document.createElement('div');
+			this.innerShadow.classList.add('membrane-inner-shadow');
+			this.element.appendChild(this.innerShadow);
 
 			// Editor pane
 			this.editorPane = this._register(this.scopedInstantiationService.createInstance(EditorPanes, this.element, this.editorContainer, this));

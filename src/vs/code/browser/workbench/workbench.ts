@@ -26,9 +26,10 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 	// Forward the MessagePort to the extension so it can directly talk to gaze
 	config.messagePorts = new Map([
-		['membrane.membrane', window.gazeExtensionPort],
+		['membrane.membrane', window.extensionToGazePort],
 	]);
-	delete window.gazeExtensionPort;
+	delete window.extensionToGazePort;
+
 
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
