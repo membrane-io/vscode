@@ -18,7 +18,8 @@ export class MembranePortManager {
 			return; // Already initialized
 		}
 
-		MembranePortManager.dialogsPort = window.gazeDialogsPort;
+		MembranePortManager.dialogsPort = window.dialogsToGazePort;
+		delete window.dialogsToGazePort;
 
 		// Set up listener for dialog and notification responses
 		MembranePortManager.dialogsPort!.onmessage = (event) => {
