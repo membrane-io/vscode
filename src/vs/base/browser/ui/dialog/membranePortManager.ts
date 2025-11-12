@@ -11,16 +11,12 @@ export interface MembraneNotificationActionResponse {
 	dismissed?: boolean;
 }
 
-interface MembraneWindow extends Window {
-	membraneDialogPortHandoffKey?: string;
-	[key: string]: unknown;
-}
-
-declare const window: MembraneWindow;
+declare const window: Window & {
+	dialogsToGazePort?: MessagePort;
+};
 
 export class MembranePortManager {
-	private static dialogPort: MessagePort | null = null;
-	private static isInitialized = false;
+	private static dialogsPort: MessagePort | null = null;
 	private static notificationResponseHandler: ((response: MembraneNotificationActionResponse) => void) | null = null;
 	private static dialogResponseHandler: ((response: MembraneDialogResponse) => void) | null = null;
 
@@ -32,70 +28,40 @@ export class MembranePortManager {
 		MembranePortManager.dialogResponseHandler = handler;
 	}
 
-	static initializeDialogPort(): void {
-		if (MembranePortManager.isInitialized) {
+	static ensureInitialized(): void {
+		if (MembranePortManager.dialogsPort) {
 			return; // Already initialized
 		}
 
-		const dialogHandoffKey = window.membraneDialogPortHandoffKey;
-		if (dialogHandoffKey && window[dialogHandoffKey]) {
-			const handoffFunction = window[dialogHandoffKey] as ((callback: (port: MessagePort) => void) => void) | undefined;
-			if (handoffFunction) {
-				handoffFunction((dialogPort: MessagePort) => {
-					MembranePortManager.dialogPort = dialogPort;
-					MembranePortManager.isInitialized = true;
+		MembranePortManager.dialogsPort = window.dialogsToGazePort ?? null;
+		delete window.dialogsToGazePort;
 
-					// Set up listener for dialog and notification responses
-					dialogPort.onmessage = (event: MessageEvent<Record<string, unknown> & { messageType: string }>) => {
-						const data = event.data;
-						if (data.messageType === 'membraneDialogResponse') {
-							MembranePortManager.handleDialogResponse(data as unknown as MembraneDialogResponse);
-						} else if (data.messageType === 'membraneNotificationResponse') {
-							MembranePortManager.handleNotificationResponse(data as unknown as MembraneNotificationActionResponse);
-						}
-					};
-				});
+		// Set up listener for dialog and notification responses
+		MembranePortManager.dialogsPort!.onmessage = (event) => {
+			try {
+				if (event.data.messageType === 'membraneDialogResponse') {
+					MembranePortManager.dialogResponseHandler!(event.data);
+				} else if (event.data.messageType === 'membraneNotificationResponse') {
+					MembranePortManager.notificationResponseHandler!(event.data);
+				}
+			} catch (error) {
+				console.error(`Error handling ${event.data.messageType} message:`, error);
 			}
-		} else {
-			console.log('No handoff key or function available');
-		}
+		};
+
 	}
 
 	static sendMessage(messageType: string, data: Record<string, unknown>): void {
-		if (!MembranePortManager.dialogPort) {
-			MembranePortManager.initializeDialogPort();
-
-			if (!MembranePortManager.dialogPort) {
-				return;
-			}
-		}
-
 		try {
+			MembranePortManager.ensureInitialized();
 			const message = {
 				messageType,
 				...data
 			};
-			MembranePortManager.dialogPort.postMessage(message);
+			MembranePortManager.dialogsPort!.postMessage(message);
 		} catch (error) {
 			console.error(`Error sending ${messageType} message:`, error);
 		}
 	}
 
-	static handleDialogResponse(response: MembraneDialogResponse): void {
-		// Use registered handler if available
-		if (MembranePortManager.dialogResponseHandler) {
-			MembranePortManager.dialogResponseHandler(response);
-		} else {
-			console.log('No dialog response handler registered');
-		}
-	}
-
-	static handleNotificationResponse(response: MembraneNotificationActionResponse): void {
-		// Use registered handler if available
-		if (MembranePortManager.notificationResponseHandler) {
-			MembranePortManager.notificationResponseHandler(response);
-		} else {
-			console.log('No notification response handler registered');
-		}
-	}
 }

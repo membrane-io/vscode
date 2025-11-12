@@ -10,7 +10,6 @@ import {
 	IWorkspace,
 	// IWorkspaceProvider,
 } from '../../../workbench/browser/web.api.js';
-import { mainWindow } from '../../../base/browser/window.js';
 import { SecretStorageProvider } from '../workbench/membrane.js';
 declare const window: Window & {
 	product?: Writeable<IWorkbenchConstructionOptions>;
@@ -22,8 +21,10 @@ declare const window: Window & {
 	vscodeTargetContainer?: HTMLElement | null;
 	completeInitialization?: () => void;
 	SENTRY_CAPTURE_EXCEPTION?: (error: Error) => void;
+	extensionToGazePort?: MessagePort;
 };
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
 
 (async function () {
 	// create workbench
@@ -36,39 +37,18 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		config = await result.json();
 	}
 
-	// MEMBRANE: Create a MessageChannel to communicate with the extension
-	const channel = new MessageChannel();
-	// local port is port2, remote port is port1
-	config.messagePorts = new Map([
-		['membrane.membrane', channel.port2],
-	]);
-
-	// Use secure handoff pattern to pass port to IDE
-	const handoffKey = `__membraneWorkbenchPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
-
-	// Create handoff function in global scope
-	window[handoffKey] = (callback: (port: MessagePort, dialogPort?: MessagePort) => void) => {
-		delete window[handoffKey]; // Immediate cleanup
-		callback(channel.port1, dialogChannel.port2);
-	};
-
-	// MEMBRANE: Create separate MessageChannel for dialogs
-	const dialogChannel = new MessageChannel();
-	const dialogHandoffKey = `__membraneDialogPort_handoff_${crypto.randomUUID().replace(/-/g, '')}`;
-
-	// Create handoff function for dialog port
-	window[dialogHandoffKey] = (callback: (dialogPort: MessagePort) => void) => {
-		delete window[dialogHandoffKey]; // Immediate cleanup
-		callback(dialogChannel.port1);
-	};
-
-	// Store handoff keys for IDE and dialog to use
-	window.membraneWorkbenchPortHandoffKey = handoffKey;
-	window.membraneDialogPortHandoffKey = dialogHandoffKey;
+	// Forward the MessagePort to the extension so it can directly talk to gaze
+	if (window.extensionToGazePort) {
+		config.messagePorts = new Map([
+			['membrane.membrane', window.extensionToGazePort],
+		]);
+		delete window.extensionToGazePort;
+	}
 
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
 	const extensionUrl = {
+		authority: window.location.host,
 		scheme: isHttps ? 'https' : 'http',
 		path: isDev ? '/membrane-dev' : '/membrane',
 	};
@@ -143,26 +123,20 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{
 			id: 'membrane.getLaunchParams',
 			handler: () => {
-				// Reading from existing HTML meta tag created outside of workbench
 				// eslint-disable-next-line no-restricted-syntax
-				const metas = mainWindow.document.getElementsByTagName('meta');
-				for (let i = 0; i < metas.length; i++) {
-					const meta = metas[i];
-					if (meta.name === 'membrane-launch-params') {
-						return meta.content ?? '';
-					}
-				}
-				return '';
+				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
+				return meta?.content ?? '';
 			},
 		},
 	];
 
-	// config.homeIndicator = {
-	// 	href: window.location.origin,
-	// 	icon: 'home',
-	// 	title: 'Membrane Home',
-	// };
+	(config as Writeable<IWorkbenchConstructionOptions> & { homeIndicator?: { href: string; icon: string; title: string } }).homeIndicator = {
+		href: window.location.origin,
+		icon: 'home',
+		title: 'Membrane Home',
+	};
 
-	const domElement = window.vscodeTargetContainer || mainWindow.document.body;
+	// eslint-disable-next-line no-restricted-syntax
+	const domElement = window.vscodeTargetContainer || document.body;
 	create(domElement, config);
 })();
