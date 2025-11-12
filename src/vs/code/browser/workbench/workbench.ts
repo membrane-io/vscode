@@ -45,6 +45,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		delete window.extensionToGazePort;
 	}
 
+
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
 	const extensionUrl = {
