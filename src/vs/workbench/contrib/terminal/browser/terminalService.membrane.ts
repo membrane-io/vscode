@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { memoize } from '../../../../base/common/decorators.js';
-import { Event, IDynamicListEventMultiplexer } from '../../../../base/common/event.js';
+import { Event, Emitter, IDynamicListEventMultiplexer, DynamicListEventMultiplexer } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
-import { ICreateContributedTerminalProfileOptions, ITerminalBackend, ITerminalLaunchError, TerminalLocation, TerminalLocationString } from '../../../../platform/terminal/common/terminal.js';
+import { ICreateContributedTerminalProfileOptions, ITerminalBackend, ITerminalLaunchError, TerminalLocation } from '../../../../platform/terminal/common/terminal.js';
 import { IEditableData } from '../../../common/views.js';
-import { ICreateTerminalOptions, IDetachedTerminalInstance, IDetachedXTermOptions, ITerminalConfigHelper, ITerminalGroup, ITerminalInstance, ITerminalInstanceHost, ITerminalLocationOptions, ITerminalService, ITerminalServiceNativeDelegate, TerminalConnectionState } from './terminal.js';
+import { ICreateTerminalOptions, IDetachedTerminalInstance, IDetachedXTermOptions, ITerminalGroup, ITerminalInstance, ITerminalInstanceHost, ITerminalLocationOptions, ITerminalService, ITerminalServiceNativeDelegate, TerminalConnectionState } from './terminal.js';
 import { IRemoteTerminalAttachTarget, IStartExtensionTerminalRequest, ITerminalProcessExtHostProxy } from '../common/terminal.js';
 import { ACTIVE_GROUP_TYPE, AUX_WINDOW_GROUP_TYPE, SIDE_GROUP_TYPE } from '../../../services/editor/common/editorService.js';
 import { ITerminalCapabilityImplMap, TerminalCapability } from '../../../../platform/terminal/common/capabilities/capabilities.js';
@@ -27,21 +27,21 @@ export class TerminalService extends Disposable implements ITerminalService {
 
 	get restoredGroupCount(): number { throw new Error('Unsupported'); }
 
-	get configHelper(): ITerminalConfigHelper { throw new Error('Unsupported'); }
 	get instances(): ITerminalInstance[] {
-
+		throw new Error('Unsupported');
+	}
+	get foregroundInstances(): ITerminalInstance[] {
 		throw new Error('Unsupported');
 	}
 	get detachedInstances(): Iterable<IDetachedTerminalInstance> {
 		throw new Error('Unsupported');
 	}
 
-
 	getReconnectedTerminals(_reconnectionOwner: string): ITerminalInstance[] | undefined {
 		return undefined;
 	}
 
-	get defaultLocation(): TerminalLocation { return this.configHelper.config.defaultLocation === TerminalLocationString.Editor ? TerminalLocation.Editor : TerminalLocation.Panel; }
+	get defaultLocation(): TerminalLocation { return TerminalLocation.Panel; }
 
 	get activeInstance(): ITerminalInstance | undefined {
 		return undefined;
@@ -63,14 +63,17 @@ export class TerminalService extends Disposable implements ITerminalService {
 	// Terminal view events
 	get onDidChangeActiveGroup(): Event<ITerminalGroup | undefined> { throw new Error('Unsupported'); }
 
-	// Lazily initialized events that fire when the specified event fires on _any_ terminal
-	@memoize get onAnyInstanceDataInput() { return this.createOnInstanceEvent(e => e.onDidInputData); }
-	@memoize get onAnyInstanceIconChange() { return this.createOnInstanceEvent(e => e.onIconChanged); }
-	@memoize get onAnyInstanceMaximumDimensionsChange() { return this.createOnInstanceEvent(e => Event.map(e.onMaximumDimensionsChanged, () => e, e.store)); }
-	@memoize get onAnyInstancePrimaryStatusChange() { return this.createOnInstanceEvent(e => Event.map(e.statusList.onDidChangePrimaryStatus, () => e, e.store)); }
-	@memoize get onAnyInstanceProcessIdReady() { return this.createOnInstanceEvent(e => e.onProcessIdReady); }
-	@memoize get onAnyInstanceSelectionChange() { return this.createOnInstanceEvent(e => e.onDidChangeSelection); }
-	@memoize get onAnyInstanceTitleChange() { return this.createOnInstanceEvent(e => e.onTitleChanged); }
+	// Multiplexed events
+	@memoize get onAnyInstanceData() { return this._register(this.createOnInstanceEvent(instance => Event.map(instance.onData, data => ({ instance, data })))).event; }
+	@memoize get onAnyInstanceDataInput() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onDidInputData, () => e, e.store))).event; }
+	@memoize get onAnyInstanceIconChange() { return this._register(this.createOnInstanceEvent(e => e.onIconChanged)).event; }
+	@memoize get onAnyInstanceMaximumDimensionsChange() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onMaximumDimensionsChanged, () => e, e.store))).event; }
+	@memoize get onAnyInstancePrimaryStatusChange() { return this._register(this.createOnInstanceEvent(e => Event.map(e.statusList.onDidChangePrimaryStatus, () => e, e.store))).event; }
+	@memoize get onAnyInstanceProcessIdReady() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onProcessIdReady, () => e, e.store))).event; }
+	@memoize get onAnyInstanceSelectionChange() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onDidChangeSelection, () => e, e.store))).event; }
+	@memoize get onAnyInstanceTitleChange() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onTitleChanged, () => e, e.store))).event; }
+	@memoize get onAnyInstanceShellTypeChanged() { return this._register(this.createOnInstanceEvent(e => Event.map(e.onDidChangeShellType, () => e))).event; }
+	@memoize get onAnyInstanceAddedCapabilityType() { return this._register(this.createOnInstanceEvent(e => Event.map(e.capabilities.onDidAddCapability, e => e.id))).event; }
 
 	constructor(
 		// @IContextKeyService private _contextKeyService: IContextKeyService,
@@ -111,11 +114,19 @@ export class TerminalService extends Disposable implements ITerminalService {
 		throw new Error('Unsupported');
 	}
 
+	async setNextCommandId(id: number, commandLine: string, commandId: string): Promise<void> {
+		throw new Error('Unsupported');
+	}
+
 	setActiveInstance(value: ITerminalInstance) {
 		throw new Error('Unsupported');
 	}
 
 	async focusActiveInstance(): Promise<void> {
+		throw new Error('Unsupported');
+	}
+
+	focusInstance(instance: ITerminalInstance): void {
 		throw new Error('Unsupported');
 	}
 
@@ -128,6 +139,14 @@ export class TerminalService extends Disposable implements ITerminalService {
 	}
 
 	async getActiveOrCreateInstance(options?: { acceptsInput?: boolean }): Promise<ITerminalInstance> {
+		throw new Error('Unsupported');
+	}
+
+	async revealTerminal(source: ITerminalInstance, preserveFocus?: boolean): Promise<void> {
+		throw new Error('Unsupported');
+	}
+
+	async showBackgroundTerminal(instance: ITerminalInstance, suppressSetActive?: boolean): Promise<void> {
 		throw new Error('Unsupported');
 	}
 
@@ -207,6 +226,10 @@ export class TerminalService extends Disposable implements ITerminalService {
 		throw new Error('Unsupported');
 	}
 
+	async createAndFocusTerminal(options?: ICreateTerminalOptions): Promise<ITerminalInstance> {
+		throw new Error('Unsupported');
+	}
+
 	async createDetachedTerminal(options: IDetachedXTermOptions): Promise<IDetachedTerminalInstance> {
 		throw new Error('Unsupported');
 	}
@@ -227,11 +250,21 @@ export class TerminalService extends Disposable implements ITerminalService {
 		return undefined;
 	}
 
-	createOnInstanceEvent<T>(getEvent: (instance: ITerminalInstance) => Event<T>): Event<T> {
-		throw new Error('Unsupported');
+	createOnInstanceEvent<T>(getEvent: (instance: ITerminalInstance) => Event<T>): DynamicListEventMultiplexer<ITerminalInstance, T> {
+		// Return a dummy multiplexer with a never-firing event
+		return new DynamicListEventMultiplexer<ITerminalInstance, T>(
+			[],
+			new Emitter<ITerminalInstance>().event,
+			new Emitter<ITerminalInstance>().event,
+			getEvent
+		);
 	}
 
 	createOnInstanceCapabilityEvent<T extends TerminalCapability, K>(capabilityId: T, getEvent: (capability: ITerminalCapabilityImplMap[T]) => Event<K>): IDynamicListEventMultiplexer<{ instance: ITerminalInstance; data: K }> {
+		throw new Error('Unsupported');
+	}
+
+	openResource(resource: URI): void {
 		throw new Error('Unsupported');
 	}
 }

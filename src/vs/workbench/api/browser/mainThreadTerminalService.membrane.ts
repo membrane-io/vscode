@@ -2,15 +2,14 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
-import { MainThreadTerminalServiceShape, MainContext, TerminalLaunchConfig, ExtHostTerminalIdentifier } from '../../api/common/extHost.protocol.js';
-import { extHostNamedCustomer } from '../../../services/extensions/common/extHostCustomers.js';
-import { IProcessProperty, IProcessReadyWindowsPty, ITerminalOutputMatch, ITerminalOutputMatcher } from '../../../../platform/terminal/common/terminal.js';
-import { ISerializableEnvironmentDescriptionMap, ISerializableEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariable.js';
+import { MainThreadTerminalServiceShape, MainContext, TerminalLaunchConfig, ExtHostTerminalIdentifier } from '../common/extHost.protocol.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { IProcessProperty, IProcessReadyWindowsPty, ITerminalOutputMatch, ITerminalOutputMatcher } from '../../../platform/terminal/common/terminal.js';
+import { ISerializableEnvironmentDescriptionMap, ISerializableEnvironmentVariableCollection } from '../../../platform/terminal/common/environmentVariable.js';
 
 @extHostNamedCustomer(MainContext.MainThreadTerminalService)
 export class MainThreadTerminalService implements MainThreadTerminalServiceShape {
-	constructor() { }
+	constructor(_extHostContext: IExtHostContext) { }
 
 	public dispose(): void { }
 
@@ -82,6 +81,14 @@ export class MainThreadTerminalService implements MainThreadTerminalServiceShape
 		throw new Error('Unsupported');
 	}
 
+	public $registerCompletionProvider(id: string, extensionId: string): void {
+		throw new Error('Unsupported');
+	}
+
+	public $unregisterCompletionProvider(id: string): void {
+		throw new Error('Unsupported');
+	}
+
 	public $sendProcessData(terminalId: number, data: string): void {
 		throw new Error('Unsupported');
 	}
@@ -90,7 +97,7 @@ export class MainThreadTerminalService implements MainThreadTerminalServiceShape
 		throw new Error('Unsupported');
 	}
 
-	public $sendProcessProperty(terminalId: number, property: IProcessProperty<unknown>): void {
+	public $sendProcessProperty(terminalId: number, property: IProcessProperty): void {
 		throw new Error('Unsupported');
 	}
 

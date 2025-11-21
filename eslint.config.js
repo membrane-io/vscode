@@ -2172,4 +2172,17 @@ export default tseslint.config(
 			'@typescript-eslint/consistent-generic-constructors': ['warn', 'constructor'],
 		}
 	},
+	// Membrane files: disable code-import-patterns to allow imports from platform/terminal/common
+	{
+		files: ['**/*.membrane.ts'],
+		languageOptions: {
+			parser: tseslint.parser,
+		},
+		plugins: {
+			'local': pluginLocal,
+		},
+		rules: {
+			'local/code-import-patterns': 'off'
+		}
+	},
 );
