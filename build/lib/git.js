@@ -15,16 +15,16 @@ const fs_1 = __importDefault(require("fs"));
  */
 function getVersion(repo) {
     // MEMBRANE: make `getVersion` work when vscode is a submodule and it's .git was hoisted.
-    const maybeGit = path.join(repo, '.git');
-    const stat = fs.statSync(maybeGit);
+    const maybeGit = path_1.default.join(repo, '.git');
+    const stat = fs_1.default.statSync(maybeGit);
     let git;
     if (stat.isFile()) {
-        const data = fs.readFileSync(maybeGit, 'utf8');
+        const data =  fs_1.default.readFileSync(maybeGit, 'utf8');
         const gitdir = data.match(/^gitdir: (.*)$/m)?.[1];
         if (!gitdir) {
             throw new Error(`Failed to parse .git submodule info in ${maybeGit}`);
         }
-        git = path.join(repo, gitdir);
+        git = path_1.default.join(repo, gitdir);
     }
     else if (stat.isDirectory()) {
         git = maybeGit;
@@ -32,7 +32,7 @@ function getVersion(repo) {
     else {
         return undefined;
     }
-    const headPath = path.join(git, 'HEAD');
+    const headPath = path_1.default.join(git, 'HEAD');
     let head;
     try {
         head = fs_1.default.readFileSync(headPath, 'utf8').trim();
