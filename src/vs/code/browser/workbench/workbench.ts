@@ -137,6 +137,23 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		title: 'Membrane Home',
 	};
 
+	// MEMBRANE: Configure workbench settings
+	config.defaultLayout = {
+		...config.defaultLayout,
+		views: [
+			...(config.defaultLayout?.views || []),
+		],
+		layout: {
+			...(config.defaultLayout?.layout || {}),
+		},
+	};
+
+	// MEMBRANE: Configure editor settings
+	config.configurationDefaults = {
+		...config.configurationDefaults,
+		'window.commandCenter': false, // Hide command center
+	};
+
 	// eslint-disable-next-line no-restricted-syntax
 	const domElement = window.vscodeTargetContainer || document.body;
 	create(domElement, config);

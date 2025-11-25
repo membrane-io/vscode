@@ -194,7 +194,8 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 		this.registerTabsContainerListeners(this.tabsContainer, this.tabsScrollbar);
 
 		// Create Editor Toolbar
-		this.createEditorActionsToolBar(this.tabsAndActionsContainer, ['editor-actions']);
+		// MEMBRANE: Don't create editor actions toolbar (hides split, close, settings icons)
+		// this.createEditorActionsToolBar(this.tabsAndActionsContainer, ['editor-actions']);
 
 		// Set tabs control visibility
 		this.updateTabsControlVisibility();
@@ -1871,7 +1872,9 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 	}
 
 	private doLayoutTabsWrapping(dimensions: IEditorTitleControlDimensions): boolean {
-		const [tabsAndActionsContainer, tabsContainer, editorToolbarContainer, tabsScrollbar] = assertReturnsAllDefined(this.tabsAndActionsContainer, this.tabsContainer, this.editorActionsToolbarContainer, this.tabsScrollbar);
+		// MEMBRANE: Handle case where editorActionsToolbarContainer doesn't exist
+		const [tabsAndActionsContainer, tabsContainer, tabsScrollbar] = assertReturnsAllDefined(this.tabsAndActionsContainer, this.tabsContainer, this.tabsScrollbar);
+		const editorToolbarContainer = this.editorActionsToolbarContainer;
 
 		// Handle wrapping tabs according to setting:
 		// - enabled: only add class if tabs wrap and don't exceed available dimensions
@@ -1889,7 +1892,8 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 			// Update `last-tab-margin-right` CSS variable to account for the absolute
 			// positioned editor actions container when tabs wrap. The margin needs to
 			// be the width of the editor actions container to avoid screen cheese.
-			tabsContainer.style.setProperty('--last-tab-margin-right', tabsWrapMultiLine ? `${editorToolbarContainer.offsetWidth}px` : '0');
+			// MEMBRANE: Only set margin if toolbar exists
+			tabsContainer.style.setProperty('--last-tab-margin-right', tabsWrapMultiLine && editorToolbarContainer ? `${editorToolbarContainer.offsetWidth}px` : '0');
 
 			// Remove old css classes that are not needed anymore
 			for (const tab of tabsContainer.children) {
@@ -1907,7 +1911,8 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 					return true; // no tab always fits
 				}
 
-				const lastTabOverlapWithToolbarWidth = lastTab.offsetWidth + editorToolbarContainer.offsetWidth - dimensions.available.width;
+				// MEMBRANE: Handle case where toolbar doesn't exist
+				const lastTabOverlapWithToolbarWidth = lastTab.offsetWidth + (editorToolbarContainer?.offsetWidth || 0) - dimensions.available.width;
 				if (lastTabOverlapWithToolbarWidth > 1) {
 					// Allow for slight rounding errors related to zooming here
 					// https://github.com/microsoft/vscode/issues/116385

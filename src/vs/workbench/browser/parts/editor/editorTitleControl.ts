@@ -10,6 +10,7 @@ import { IThemeService, Themable } from '../../../../platform/theme/common/theme
 import { BreadcrumbsControl, BreadcrumbsControlFactory } from './breadcrumbsControl.js';
 import { IEditorGroupsView, IEditorGroupTitleHeight, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from './editor.js';
 import { IEditorTabsControl } from './editorTabsControl.js';
+import { NoEditorTabsControl } from './noEditorTabsControl.js';
 import { MultiEditorTabsControl } from './multiEditorTabsControl.js';
 import { SingleEditorTabsControl } from './singleEditorTabsControl.js';
 import { IEditorPartOptions } from '../../../common/editor.js';
@@ -17,7 +18,6 @@ import { EditorInput } from '../../../common/editor/editorInput.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { MultiRowEditorControl } from './multiRowEditorTabsControl.js';
 import { IReadonlyEditorGroupModel } from '../../../common/editor/editorGroupModel.js';
-import { NoEditorTabsControl } from './noEditorTabsControl.js';
 
 export interface IEditorTitleControlDimensions {
 

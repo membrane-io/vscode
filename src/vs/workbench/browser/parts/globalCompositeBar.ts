@@ -724,6 +724,11 @@ export class SimpleGlobalActivityActionViewItem extends GlobalActivityActionView
 				compact: true,
 			}, () => undefined, userDataProfileService, themeService, hoverService, menuService, contextMenuService, contextKeyService, configurationService, environmentService, keybindingService, instantiationService, activityService);
 	}
+
+	protected override async resolveMainMenuActions(_menu: IMenu, _disposable: DisposableStore): Promise<IAction[]> {
+		// Return empty array to remove all options from the settings icon menu
+		return [];
+	}
 }
 
 function simpleActivityContextMenuActions(storageService: IStorageService, isAccount: boolean): IAction[] {
