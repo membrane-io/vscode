@@ -4,6 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 /// <reference lib='webworker' />
 
+// Force webpack to bundle events module
+import 'events';
+
 import ts from 'typescript/lib/tsserverlibrary';
 import { URI } from 'vscode-uri';
 import { FileWatcherManager } from './fileWatcherManager';
