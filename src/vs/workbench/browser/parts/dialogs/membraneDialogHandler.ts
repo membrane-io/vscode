@@ -9,14 +9,11 @@ import { ILayoutService } from '../../../../platform/layout/browser/layoutServic
 import { ILogService } from '../../../../platform/log/common/log.js';
 import Severity from '../../../../base/common/severity.js';
 import { MembraneDialog } from '../../../../base/browser/ui/dialog/membraneDialog.js';
-import { IDialogResult, IDialogStyles } from '../../../../base/browser/ui/dialog/dialog.js';
+import { IDialogResult } from '../../../../base/browser/ui/dialog/dialog.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
 import { fromNow } from '../../../../base/common/date.js';
-import type { IButtonStyles } from '../../../../base/browser/ui/button/button.js';
-import type { ICheckboxStyles } from '../../../../base/browser/ui/toggle/toggle.js';
-import type { IInputBoxStyles } from '../../../../base/browser/ui/inputbox/inputBox.js';
 
 export class MembraneDialogHandler extends AbstractDialogHandler {
 

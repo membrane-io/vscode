@@ -6,15 +6,15 @@
 import './media/editortabscontrol.css';
 import { localize } from '../../../../nls.js';
 import { DataTransfers } from '../../../../base/browser/dnd.js';
-import { $, Dimension, getActiveWindow, getWindow, isMouseEvent } from '../../../../base/browser/dom.js';
+import { Dimension, getActiveWindow, getWindow, isMouseEvent } from '../../../../base/browser/dom.js';
 import { StandardMouseEvent } from '../../../../base/browser/mouseEvent.js';
-import { ActionsOrientation, IActionViewItem, prepareActions } from '../../../../base/browser/ui/actionbar/actionbar.js';
+import { ActionsOrientation, IActionViewItem } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { IAction, ActionRunner } from '../../../../base/common/actions.js';
 import { ResolvedKeybinding } from '../../../../base/common/keybindings.js';
 import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import { createActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
-import { IContextKeyService, IContextKey } from '../../../../platform/contextkey/common/contextkey.js';
+import { IContextKeyService, IContextKey, AuxiliaryBarVisibleContext } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
@@ -24,7 +24,7 @@ import { IThemeService, Themable } from '../../../../platform/theme/common/theme
 import { DraggedEditorGroupIdentifier, DraggedEditorIdentifier, fillEditorsDragData, isWindowDraggedOver } from '../../dnd.js';
 import { EditorPane } from './editorPane.js';
 import { IEditorGroupsView, IEditorGroupView, IEditorPartsView, IInternalEditorOpenOptions } from './editor.js';
-import { IEditorCommandsContext, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, EditorsOrder, EditorInputCapabilities, IToolbarActions, GroupIdentifier, Verbosity } from '../../../common/editor.js';
+import { IEditorCommandsContext, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, EditorsOrder, EditorInputCapabilities, IToolbarActions, GroupIdentifier } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { ResourceContextKey, ActiveEditorPinnedContext, ActiveEditorStickyContext, ActiveEditorGroupLockedContext, ActiveEditorCanSplitInGroupContext, SideBySideEditorActiveContext, ActiveEditorFirstInGroupContext, ActiveEditorAvailableEditorIdsContext, applyAvailableEditorIds, ActiveEditorLastInGroupContext } from '../../../common/contextkeys.js';
 import { AnchorAlignment } from '../../../../base/browser/ui/contextview/contextview.js';
@@ -43,15 +43,13 @@ import { IAuxiliaryEditorPart, IEditorGroupsService, MergeGroupMode } from '../.
 import { isMacintosh } from '../../../../base/common/platform.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
-import { IBaseActionViewItemOptions } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
-import { MarkdownString } from '../../../../base/common/htmlContent.js';
-import { IManagedHoverTooltipMarkdownString } from '../../../../base/browser/ui/hover/hover.js';
+
 import { applyDragImage } from '../../../../base/browser/ui/dnd/dnd.js';
 
 // MEMBRANE: see membraneActionsToolbar initialization below
 // import { MenuItemAction } from 'vs/platform/actions/common/actions';
 // import { Separator } from 'vs/base/common/actions';
-// import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
+// import { AuxiliaryBarVisibleContext } from '../../../common/contextkeys.js';
 // import { Codicon } from 'vs/base/common/codicons';
 // import { ICommandService } from 'vs/platform/commands/common/commands';
 export class EditorCommandsContextActionRunner extends ActionRunner {
@@ -106,12 +104,14 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 	protected readonly treeItemsTransfer = LocalSelectionTransfer.getInstance<DraggedTreeItemsIdentifier>();
 
 	private static readonly EDITOR_TAB_HEIGHT = {
-		normal: 35 as const,
+		// MEMBRANE: thinner editor tabs
+		normal: 30 as const,
 		compact: 22 as const
 	};
 
 	protected editorActionsToolbarContainer: HTMLElement | undefined;
 	private editorActionsToolbar: WorkbenchToolBar | undefined;
+	private membraneActionsToolbar: WorkbenchToolBar | undefined;
 	private readonly editorActionsToolbarDisposables = this._register(new DisposableStore());
 	private readonly editorActionsDisposables = this._register(new DisposableStore());
 
@@ -152,18 +152,10 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 	) {
 		super(themeService);
 
-		// MEMBRANE: editorGroupsService is injected for future use
-		void this.editorGroupsService;
-
-		this.renderDropdownAsChildElement = false;
-
-		const container = this.create(parent);
-
-		// Context Keys
-		this.contextMenuContextKeyService = this._register(this.contextKeyService.createScoped(container));
-		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection(
+		this.contextMenuContextKeyService = this._register(this.contextKeyService.createScoped(parent));
+		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection(
 			[IContextKeyService, this.contextMenuContextKeyService],
-		)));
+		));
 
 		this.resourceContext = this._register(scopedInstantiationService.createInstance(ResourceContextKey));
 
@@ -177,11 +169,14 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		this.sideBySideEditorContext = SideBySideEditorActiveContext.bindTo(this.contextMenuContextKeyService);
 
 		this.groupLockedContext = ActiveEditorGroupLockedContext.bindTo(this.contextMenuContextKeyService);
+
+		this.renderDropdownAsChildElement = false;
+
+		this.create(parent);
 	}
 
-	protected create(parent: HTMLElement): HTMLElement {
+	protected create(parent: HTMLElement): void {
 		this.updateTabHeight();
-		return parent;
 	}
 
 	private get editorActionsEnabled(): boolean {
@@ -189,7 +184,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 	}
 
 	protected createEditorActionsToolBar(parent: HTMLElement, classes: string[]): void {
-		this.editorActionsToolbarContainer = $('div');
+		this.editorActionsToolbarContainer = document.createElement('div');
 		this.editorActionsToolbarContainer.classList.add(...classes);
 		parent.appendChild(this.editorActionsToolbarContainer);
 
@@ -220,7 +215,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 
 		// Toolbar Widget
 		this.editorActionsToolbar = this.editorActionsToolbarDisposables.add(this.instantiationService.createInstance(WorkbenchToolBar, container, {
-			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+			actionViewItemProvider: action => this.actionViewItemProvider(action),
 			orientation: ActionsOrientation.HORIZONTAL,
 			ariaLabel: localize('ariaLabelEditorActions', "Editor actions"),
 			getKeyBinding: action => this.getKeybinding(action),
@@ -244,15 +239,77 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				this.notificationService.error(e.error);
 			}
 		}));
+
+		// MEMBRANE: Additional toolbar items that appear in the top right of the editor. This is basically a copy
+		// of the above code for editorActionsToolbar but using MembraneEditorTitle instead of EditorTitle.
+		this.membraneActionsToolbar = this.editorActionsToolbarDisposables.add(this.instantiationService.createInstance(WorkbenchToolBar, container, {
+			actionViewItemProvider: action => this.actionViewItemProvider(action),
+			orientation: ActionsOrientation.HORIZONTAL,
+			ariaLabel: 'Additional Editor actions', // IMPORTANT: we match on this in css
+			actionRunner: this.editorActionsToolbarDisposables.add(new EditorCommandsContextActionRunner(context)),
+			anchorAlignmentProvider: () => AnchorAlignment.RIGHT,
+		}));
+		this.membraneActionsToolbar.context = context;
+		this.editorActionsToolbarDisposables.add(this.membraneActionsToolbar.actionRunner.onDidRun(e => {
+			if (e.error && !isCancellationError(e.error)) {
+				this.notificationService.error(e.error);
+			}
+		}));
+		// Update when the auxiliary bar is opened/closed
+
+		this.editorActionsToolbarDisposables.add(this.getEditorPaneAwareContextKeyService().onDidChangeContext((e) => {
+			if (e.affectsSome(new Set([AuxiliaryBarVisibleContext.key]))) {
+				this.updateMembraneActions();
+			}
+		}));
+		// Update when the active group changes (i.e. rearranging grid/split view)
+		// because the toprightmost tab may have changed
+		this.editorActionsToolbarDisposables.add(this.editorGroupsService.onDidChangeActiveGroup(() => {
+			this.updateMembraneActions();
+		}));
+		// Update when a file is opened
+		this.editorActionsToolbarDisposables.add(this.editorGroupsService.onDidActivateGroup(() => {
+			this.updateMembraneActions();
+		}));
+
+		this.updateMembraneActions();
 	}
 
+	// MEMBRANE: see membraneActionsToolbar initialization above (unused after moving gaze to /ide)
+	private updateMembraneActions() {
+		const membraneActions: IAction[] = [];
 
-	private actionViewItemProvider(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {
+		// const isAuxBarHidden = this.getEditorPaneAwareContextKeyService().contextMatchesRules(AuxiliaryBarVisibleContext.toNegated());
+
+		// let groupAbove;
+		// let groupRight;
+		// let isTopRight;
+		// try {
+		// 	// findGroup can throw an error in multiple places when some editor parts are not instantiated
+		// 	groupAbove = this.editorGroupsService.findGroup({ direction: GroupDirection.UP }, this.groupView);
+		// 	groupRight = this.editorGroupsService.findGroup({ direction: GroupDirection.RIGHT }, this.groupView);
+		// 	isTopRight = !groupAbove && !groupRight;
+		// } catch (error) {
+		// }
+
+		// if (isAuxBarHidden && isTopRight) {
+		// 	membraneActions.push(new Separator());
+		// 	membraneActions.push(new MenuItemAction({
+		// 		id: 'workbench.action.toggleAuxiliaryBar',
+		// 		title: 'Show Brane (AI) & Program Info',
+		// 		icon: Codicon.chevronLeft,
+		// 	}, undefined, undefined, undefined, this.getEditorPaneAwareContextKeyService(), this.commandService));
+		// }
+
+		this.membraneActionsToolbar?.setActions(membraneActions, []);
+	}
+
+	private actionViewItemProvider(action: IAction): IActionViewItem | undefined {
 		const activeEditorPane = this.groupView.activeEditorPane;
 
 		// Check Active Editor
 		if (activeEditorPane instanceof EditorPane) {
-			const result = activeEditorPane.getActionViewItem(action, options);
+			const result = activeEditorPane.getActionViewItem(action, {});
 
 			if (result) {
 				return result;
@@ -260,7 +317,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		}
 
 		// Check extensions
-		return createActionViewItem(this.instantiationService, action, { ...options, menuAsChild: this.renderDropdownAsChildElement });
+		return createActionViewItem(this.instantiationService, action, { menuAsChild: this.renderDropdownAsChildElement });
 	}
 
 	protected updateEditorActionsToolbar(): void {
@@ -273,10 +330,11 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 		const editorActions = this.groupView.createEditorActions(this.editorActionsDisposables);
 		this.editorActionsDisposables.add(editorActions.onDidChange(() => this.updateEditorActionsToolbar()));
 
-		// MEMBRANE: No longer hiding editor tab actions (e.g. Split Editor, More Actions).
-		const editorActionsToolbar = assertReturnsDefined(this.editorActionsToolbar);
-		const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
-		editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
+		// MEMBRANE: hide editor tab actions (e.g. Split Editor, More Actions)
+		const editorActionsToolbar = this.editorActionsToolbar;
+		assertReturnsDefined(editorActionsToolbar);
+		// const { primary, secondary } = this.prepareEditorActions(editorActions.actions);
+		// editorActionsToolbar.setActions(prepareActions(primary), prepareActions(secondary));
 	}
 
 	protected abstract prepareEditorActions(editorActions: IToolbarActions): IToolbarActions;
@@ -331,7 +389,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 				label = localize('draggedEditorGroup', "{0} (+{1})", label, this.groupView.count - 1);
 			}
 
-			applyDragImage(e, element, label);
+			applyDragImage(e, this.parent, label, ['monaco-editor-group-drag-image']);
 		}
 
 		return isNewWindowOperation;
@@ -462,19 +520,6 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
 
 	protected get tabHeight() {
 		return this.groupsView.partOptions.tabHeight !== 'compact' ? EditorTabsControl.EDITOR_TAB_HEIGHT.normal : EditorTabsControl.EDITOR_TAB_HEIGHT.compact;
-	}
-
-	protected getHoverTitle(editor: EditorInput): string | IManagedHoverTooltipMarkdownString {
-		const title = editor.getTitle(Verbosity.LONG);
-		if (!this.tabsModel.isPinned(editor)) {
-			return {
-				markdown: new MarkdownString('', { supportThemeIcons: true, isTrusted: true }).
-					appendText(title).
-					appendMarkdown(' (_preview_ [$(gear)](command:workbench.action.openSettings?%5B%22workbench.editor.enablePreview%22%5D "Configure Preview Mode"))'),
-				markdownNotSupportedFallback: title + ' (preview)'
-			};
-		}
-		return title;
 	}
 
 	protected updateTabHeight(): void {

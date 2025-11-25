@@ -1636,7 +1636,7 @@ export class MultiEditorTabsControl extends EditorTabsControl {
 		tabLabelWidget.setResource(
 			{ name, description, resource: EditorResourceAccessor.getOriginalUri(editor, { supportSideBySide: SideBySideEditor.BOTH }) },
 			{
-				title: this.getHoverTitle(editor),
+				title: editor.getTitle(Verbosity.LONG),
 				extraClasses: coalesce(['tab-label', fileDecorationBadges ? 'tab-label-has-badge' : undefined].concat(editor.getLabelExtraClasses())),
 				italic: !this.tabsModel.isPinned(editor),
 				forceLabel,

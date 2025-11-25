@@ -21,7 +21,7 @@ declare const window: Window & {
 	vscodeTargetContainer?: HTMLElement | null;
 	completeInitialization?: () => void;
 	SENTRY_CAPTURE_EXCEPTION?: (error: Error) => void;
-	extensionToGazePort?: MessagePort;
+	gazeExtensionPort?: MessagePort;
 };
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -38,11 +38,11 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	}
 
 	// Forward the MessagePort to the extension so it can directly talk to gaze
-	if (window.extensionToGazePort) {
-		config.messagePorts = new Map([
-			['membrane.membrane', window.extensionToGazePort],
+	if (window.gazeExtensionPort) {
+		config.messagePorts = new Map<string, MessagePort>([
+			['membrane.membrane', window.gazeExtensionPort],
 		]);
-		delete window.extensionToGazePort;
+		delete window.gazeExtensionPort;
 	}
 
 

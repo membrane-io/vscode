@@ -40,7 +40,7 @@ export class WorkerServerProcessFactory implements TsServerProcessFactory {
 		version: TypeScriptVersion,
 		args: readonly string[],
 		kind: TsServerProcessKind,
-		configuration: TypeScriptServiceConfiguration,
+		_configuration: TypeScriptServiceConfiguration,
 		_versionManager: TypeScriptVersionManager,
 		_nodeVersionManager: NodeVersionManager,
 		tsServerLog: TsServerLog | undefined,

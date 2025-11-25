@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { INotificationsModel, NotificationChangeType, INotificationChangeEvent, INotificationViewItem } from '../../../common/notifications.js';
-import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { Dimension } from '../../../../base/browser/dom.js';
 import { INotificationsToastController } from './notificationsCommands.js';
 import { Event, Emitter } from '../../../../base/common/event.js';
@@ -27,7 +27,7 @@ interface MembraneNotificationActionResponse {
 	dismissed?: boolean;
 }
 
-export class MembraneNotificationsToasts implements INotificationsToastController {
+export class MembraneNotificationsToasts extends Disposable implements INotificationsToastController {
 
 	private static readonly MAX_NOTIFICATIONS = 3;
 	private static readonly SPAM_PROTECTION = {
@@ -35,7 +35,7 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 		limit: this.MAX_NOTIFICATIONS
 	};
 
-	private readonly _onDidChangeVisibility = new Emitter<void>();
+	private readonly _onDidChangeVisibility = this._register(new Emitter<void>());
 	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 
 	private _isVisible = false;
@@ -46,21 +46,22 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 	private readonly notificationsToastsVisibleContextKey: IContextKey<boolean>;
 
 	private readonly activeNotifications = new Map<string, INotificationViewItem>();
-	private readonly disposables = new DisposableStore();
+	private readonly disposables = this._register(new DisposableStore());
 
 	constructor(
 		private readonly model: INotificationsModel,
 		@ILifecycleService private readonly lifecycleService: ILifecycleService,
 		@IContextKeyService contextKeyService: IContextKeyService
 	) {
+		super();
 		this.notificationsToastsVisibleContextKey = NotificationsToastsVisibleContext.bindTo(contextKeyService);
 		this.registerListeners();
 
 		// Initialize port manager to set up notification response listener
-		MembranePortManager.initializeDialogPort();
+		MembranePortManager.ensureInitialized();
 		// Register this instance as the notification response handler
-		MembranePortManager.setNotificationResponseHandler((response: MembraneNotificationActionResponse) => {
-			this.handleNotificationAction(response);
+		MembranePortManager.setNotificationResponseHandler((response: unknown) => {
+			this.handleNotificationAction(response as MembraneNotificationActionResponse);
 		});
 	}
 
@@ -164,7 +165,7 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 
 		// Send notification via MembranePortManager
 
-		MembranePortManager.initializeDialogPort();
+		MembranePortManager.ensureInitialized();
 		MembranePortManager.sendMessage('membraneNotification', {
 			type: 'toast',
 			id: `notification-${notificationId}`,
@@ -322,8 +323,8 @@ export class MembraneNotificationsToasts implements INotificationsToastControlle
 		}
 	}
 
-	dispose(): void {
+	override dispose(): void {
 		this.disposables.dispose();
-		this._onDidChangeVisibility.dispose();
+		super.dispose();
 	}
 }
