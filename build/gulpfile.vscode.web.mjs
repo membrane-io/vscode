@@ -17,7 +17,7 @@ import filter from 'gulp-filter';
 import * as dependenciesModule from './lib/dependencies.js';
 import vfs from 'vinyl-fs';
 import packageJson from '../package.json' with { type: 'json' };
-import { compileBuildWithManglingTask } from './gulpfile.compile.mjs';
+import { compileBuildWithoutManglingTask, compileBuildWithManglingTask } from './gulpfile.compile.mjs';
 import extensions from './lib/extensions.js';
 import VinylFile from 'vinyl';
 import jsonEditor from 'gulp-json-editor';
@@ -234,7 +234,10 @@ const dashed = (/** @type {string} */ str) => (str ? `-${str}` : ``);
 	gulp.task(vscodeWebTaskCI);
 
 	const vscodeWebTask = task.define(`vscode-web${dashed(minified)}`, task.series(
-		compileBuildWithManglingTask,
+		// MEMBRANE: Use this instead of `compileBuildTask` to speed up local builds
+		// by skipping the mangle step (~15min)
+		// compileBuildWithManglingTask,
+		minified ? compileBuildWithoutManglingTask : compileBuildWithManglingTask,
 		vscodeWebTaskCI
 	));
 	gulp.task(vscodeWebTask);
