@@ -19,6 +19,7 @@ const tsLoaderOptions = {
 		'sourceMap': true,
 	},
 	onlyCompileBundledFiles: true,
+	transpileOnly: true, // Skip type checking to avoid TypeScript version incompatibilities
 };
 
 function withNodeDefaults(/**@type WebpackConfig & { context: string }*/extConfig) {
