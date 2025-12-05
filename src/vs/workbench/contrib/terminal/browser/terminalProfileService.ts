@@ -13,23 +13,24 @@ import { IRegisterContributedProfileArgs, ITerminalProfileProvider, ITerminalPro
 /*
  * Links TerminalService with TerminalProfileResolverService
  * and keeps the available terminal profiles updated
+ * 
+ * NOTE: This is a web stub that returns safe defaults instead of throwing errors
  */
 export class TerminalProfileService extends Disposable implements ITerminalProfileService {
 	declare _serviceBrand: undefined;
 
-	get onDidChangeAvailableProfiles(): Event<ITerminalProfile[]> { throw new Error('Unsupported'); }
+	get onDidChangeAvailableProfiles(): Event<ITerminalProfile[]> { return Event.None; }
 
 	get profilesReady(): Promise<void> {
-
-		throw new Error('Unsupported');
+		return Promise.resolve();
 	}
+
 	get availableProfiles(): ITerminalProfile[] {
-
-		throw new Error('Unsupported');
+		return [];
 	}
-	get contributedProfiles(): IExtensionTerminalProfile[] {
 
-		throw new Error('Unsupported');
+	get contributedProfiles(): IExtensionTerminalProfile[] {
+		return [];
 	}
 
 	constructor(
@@ -46,50 +47,40 @@ export class TerminalProfileService extends Disposable implements ITerminalProfi
 	}
 
 	getDefaultProfileName(): string | undefined {
-
-		throw new Error('Unsupported');
+		return undefined;
 	}
 
 	getDefaultProfile(os?: OperatingSystem): ITerminalProfile | undefined {
-
-		throw new Error('Unsupported');
+		return undefined;
 	}
-
 
 	@throttle(2000)
 	refreshAvailableProfiles(): void {
-
-		throw new Error('Unsupported');
+		// No-op
 	}
 
 	protected async _refreshAvailableProfilesNow(): Promise<void> {
-
-		throw new Error('Unsupported');
+		// No-op
 	}
 
 	getContributedProfileProvider(extensionIdentifier: string, id: string): ITerminalProfileProvider | undefined {
-
-		throw new Error('Unsupported');
+		return undefined;
 	}
 
 	async getPlatformKey(): Promise<string> {
-
-		throw new Error('Unsupported');
+		return 'web';
 	}
 
 	registerTerminalProfileProvider(extensionIdentifier: string, id: string, profileProvider: ITerminalProfileProvider): IDisposable {
-
-		throw new Error('Unsupported');
+		return { dispose: () => { } };
 	}
 
 	async registerContributedProfile(args: IRegisterContributedProfileArgs): Promise<void> {
-
-		throw new Error('Unsupported');
+		// No-op
 	}
 
 	async getContributedDefaultProfile(shellLaunchConfig: IShellLaunchConfig): Promise<IExtensionTerminalProfile | undefined> {
-
-		throw new Error('Unsupported');
+		return undefined;
 	}
 
 }
