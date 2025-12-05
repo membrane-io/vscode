@@ -34,9 +34,6 @@
 		"./vscode-dts/vscode.d.ts"
 	],
 	"exclude": [
-		"vs/workbench/contrib/webview/browser/pre/service-worker.js",
-		"vs/workbench/contrib/terminal/browser/terminalInstanceService.ts",
-		"vs/workbench/contrib/terminal/browser/terminalProfileService.ts",
-		"vs/workbench/contrib/terminal/browser/terminalService.ts"
+		"vs/workbench/contrib/webview/browser/pre/service-worker.js"
 	]
 }
