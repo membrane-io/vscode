@@ -376,6 +376,7 @@ const allowedExtensions = [
     'json-language-features',
     'log',
     'markdown',
+    'markdown-basics',
     'markdown-language-features',
     'markdown-math',
     'media-preview',
@@ -392,6 +393,7 @@ const allowedExtensions = [
     'theme-solarized-dark',
     'theme-solarized-light',
     'typescript',
+    'typescript-basics',
     'typescript-language-features',
     'xml',
     'yaml',
@@ -399,7 +401,6 @@ const allowedExtensions = [
 function isAllowedInMembrane(name) {
     return allowedExtensions.some(allowedExtensionName => allowedExtensionName === name);
 }
-exports.isAllowedInMembrane = isAllowedInMembrane;
 /**
  * Package local extensions that are known to not have native dependencies. Mutually exclusive to {@link packageNativeLocalExtensionsStream}.
  * @param forWeb build the extensions that have web targets
