@@ -67,7 +67,8 @@ function stylelint() {
 }
 
 const normalizeScriptPath = (/** @type {string} */ p) => p.replace(/\.(js|ts)$/, '');
-if (normalizeScriptPath(import.meta.filename) === normalizeScriptPath(process.argv[1])) {
+const filename = import.meta.url.replace(/^file:\/\//, '');
+if (normalizeScriptPath(filename) === normalizeScriptPath(process.argv[1])) {
 	stylelint().on('error', (err) => {
 		console.error();
 		console.error(err);
