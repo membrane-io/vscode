@@ -452,12 +452,14 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			// The menu bar toggles the title bar in web because it does not need to be shown for window controls only
 			if (isWeb && menuBarVisibility === 'toggle') {
-				this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled));
+				// MEMBRANE: Always hide titlebar
+				this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 			}
 
 			// The menu bar toggles the title bar in full screen for toggle and classic settings
 			else if (this.state.runtime.mainWindowFullscreen && (menuBarVisibility === 'toggle' || menuBarVisibility === 'classic')) {
-				this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled));
+				// MEMBRANE: Always hide titlebar
+				this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 			}
 
 			// Move layout call to any time the menubar
@@ -506,7 +508,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		if (hasCustomTitlebar(this.configurationService)) {
 
 			// Propagate to grid
-			this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled));
+			// MEMBRANE: Always hide titlebar
+			this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 
 			// Indicate active window border
 			this.updateWindowBorder(true);
@@ -1577,6 +1580,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.mainContainer.setAttribute('role', 'application');
 		this.workbenchGrid = workbenchGrid;
 		this.workbenchGrid.edgeSnapping = this.state.runtime.mainWindowFullscreen;
+		
+		// MEMBRANE: Ensure titlebar is hidden from the start
+		this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 
 		for (const part of [titleBar, editorPart, activityBar, panelPart, sideBar, statusBar, auxiliaryBarPart, bannerPart]) {
 			this._register(part.onDidVisibilityChange(visible => {
@@ -2242,14 +2248,16 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	}
 
 	updateMenubarVisibility(skipLayout: boolean): void {
-		const shouldShowTitleBar = shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled);
+		// MEMBRANE: Always hide titlebar
+		const shouldShowTitleBar = false;
 		if (!skipLayout && this.workbenchGrid && shouldShowTitleBar !== this.isVisible(Parts.TITLEBAR_PART, mainWindow)) {
 			this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowTitleBar);
 		}
 	}
 
 	updateCustomTitleBarVisibility(): void {
-		const shouldShowTitleBar = shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled);
+		// MEMBRANE: Always hide titlebar
+		const shouldShowTitleBar = false;
 		const titlebarVisible = this.isVisible(Parts.TITLEBAR_PART);
 		if (shouldShowTitleBar !== titlebarVisible) {
 			this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowTitleBar);
@@ -2415,7 +2423,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			this.workbenchGrid.moveView(this.bannerPartView, Sizing.Distribute, this.titleBarPartView, shouldBannerBeFirst ? Direction.Up : Direction.Down);
 		}
 
-		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled));
+		// MEMBRANE: Always hide titlebar
+		this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 	}
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
@@ -2546,7 +2555,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 				type: 'leaf',
 				data: { type: Parts.TITLEBAR_PART },
 				size: titleBarHeight,
-				visible: this.isVisible(Parts.TITLEBAR_PART, mainWindow)
+				// MEMBRANE: Always hide titlebar
+				visible: false
 			},
 			{
 				type: 'leaf',
