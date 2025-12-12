@@ -781,6 +781,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	}
 
 	private shouldRestoreEditors(contextService: IWorkspaceContextService, initialEditorsState: IInitialEditorsState | undefined): boolean {
+		return false; // MEMBRANE: disable editor state saving
 
 		// Restore editors based on a set of rules:
 		// - never when running on temporary workspace

@@ -1333,6 +1333,8 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 	}
 
 	protected override saveState(): void {
+		// MEMBRANE: disable editor state saving
+		return;
 
 		// Persist grid UI state
 		if (this.gridWidget) {
@@ -1357,7 +1359,9 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 	}
 
 	protected loadState(): IEditorPartUIState | undefined {
-		return this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY];
+		// MEMBRANE: disable editor state saving
+		return undefined;
+		// return this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY];
 	}
 
 	createState(): IEditorPartUIState {
