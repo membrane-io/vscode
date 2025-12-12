@@ -79,6 +79,10 @@ export class IndexedDB {
 					}
 				}
 			};
+
+			request.onblocked = () => {
+				console.error('IndexedDB is blocked. Please close other Membrane tabs.');
+			};
 		});
 	}
 
