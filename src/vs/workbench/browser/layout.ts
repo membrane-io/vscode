@@ -1580,7 +1580,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.mainContainer.setAttribute('role', 'application');
 		this.workbenchGrid = workbenchGrid;
 		this.workbenchGrid.edgeSnapping = this.state.runtime.mainWindowFullscreen;
-		
+
 		// MEMBRANE: Ensure titlebar is hidden from the start
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, false);
 
