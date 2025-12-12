@@ -24,7 +24,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		config = await result.json();
 	}
 
-	// Forward the MessagePort to the extension so it can directly talk to gaze
+	// Forward the MessagePort to our extension so it can directly talk to gaze
 	config.messagePorts = new Map([
 		['membrane.membrane', window.extensionToGazePort],
 	]);
