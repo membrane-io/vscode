@@ -47,6 +47,8 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	config.additionalBuiltinExtensions = [URI.revive(extensionUrl)];
 
 	config.workspaceProvider = {
+		// IMPORTANT: this filename must match the filename used in `memfs.ts`.
+		// TODO: Somehow use product.json to configure that globally
 		workspace: { workspaceUri: URI.parse('memfs:/membrane.code-workspace') },
 		payload: {
 			skipReleaseNotes: 'true',
