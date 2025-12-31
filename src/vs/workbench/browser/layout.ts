@@ -788,12 +788,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		// - not when we have files to open, unless:
 		// - always when `window.restoreWindows: preserve`
 
-		if (isTemporaryWorkspace(contextService.getWorkspace())) {
-			return false;
-		}
+		// if (isTemporaryWorkspace(contextService.getWorkspace())) {
+		// 	return false;
+		// }
 
-		const forceRestoreEditors = this.configurationService.getValue<string>('window.restoreWindows') === 'preserve';
-		return !!forceRestoreEditors || initialEditorsState === undefined;
+		// const forceRestoreEditors = this.configurationService.getValue<string>('window.restoreWindows') === 'preserve';
+		// return !!forceRestoreEditors || initialEditorsState === undefined;
 	}
 
 	protected willRestoreEditors(): boolean {

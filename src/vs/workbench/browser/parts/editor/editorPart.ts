@@ -1334,28 +1334,26 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 
 	protected override saveState(): void {
 		// MEMBRANE: disable editor state saving
-		return;
+		// // Persist grid UI state
+		// if (this.gridWidget) {
+		// 	if (this.isEmpty) {
+		// 		delete this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY];
+		// 	} else {
+		// 		this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY] = this.createState();
+		// 	}
+		// }
 
-		// Persist grid UI state
-		if (this.gridWidget) {
-			if (this.isEmpty) {
-				delete this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY];
-			} else {
-				this.workspaceMemento[EditorPart.EDITOR_PART_UI_STATE_STORAGE_KEY] = this.createState();
-			}
-		}
+		// // Persist centered view state
+		// if (this.centeredLayoutWidget) {
+		// 	const centeredLayoutState = this.centeredLayoutWidget.state;
+		// 	if (this.centeredLayoutWidget.isDefault(centeredLayoutState)) {
+		// 		delete this.profileMemento[EditorPart.EDITOR_PART_CENTERED_VIEW_STORAGE_KEY];
+		// 	} else {
+		// 		this.profileMemento[EditorPart.EDITOR_PART_CENTERED_VIEW_STORAGE_KEY] = centeredLayoutState;
+		// 	}
+		// }
 
-		// Persist centered view state
-		if (this.centeredLayoutWidget) {
-			const centeredLayoutState = this.centeredLayoutWidget.state;
-			if (this.centeredLayoutWidget.isDefault(centeredLayoutState)) {
-				delete this.profileMemento[EditorPart.EDITOR_PART_CENTERED_VIEW_STORAGE_KEY];
-			} else {
-				this.profileMemento[EditorPart.EDITOR_PART_CENTERED_VIEW_STORAGE_KEY] = centeredLayoutState;
-			}
-		}
-
-		super.saveState();
+		// super.saveState();
 	}
 
 	protected loadState(): IEditorPartUIState | undefined {
