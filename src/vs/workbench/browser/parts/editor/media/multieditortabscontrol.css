@@ -558,3 +558,8 @@
 .monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:first-child.drop-target-right::before {
 	width: 2px;
 }
+
+/* MEMBRANE: Always show close button (X) for active tabs */
+.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active > .tab-actions .action-label {
+	opacity: 1 !important;
+}

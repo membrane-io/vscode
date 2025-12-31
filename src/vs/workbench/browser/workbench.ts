@@ -27,7 +27,6 @@ import { NotificationsCenter } from './parts/notifications/notificationsCenter.j
 import { NotificationsAlerts } from './parts/notifications/notificationsAlerts.js';
 import { NotificationsStatus } from './parts/notifications/notificationsStatus.js';
 import { registerNotificationCommands } from './parts/notifications/notificationsCommands.js';
-import { NotificationsToasts } from './parts/notifications/notificationsToasts.js';
 import { setARIAContainer } from '../../base/browser/ui/aria/aria.js';
 import { FontMeasurements } from '../../editor/browser/config/fontMeasurements.js';
 import { createBareFontInfoFromRawSettings } from '../../editor/common/config/fontInfoFromSettings.js';
@@ -50,6 +49,7 @@ import { AccessibleViewRegistry } from '../../platform/accessibility/browser/acc
 import { NotificationAccessibleView } from './parts/notifications/notificationAccessibleView.js';
 import { IMarkdownRendererService } from '../../platform/markdown/browser/markdownRenderer.js';
 import { EditorMarkdownCodeBlockRenderer } from '../../editor/browser/widget/markdownRenderer/browser/editorMarkdownCodeBlockRenderer.js';
+import { MembraneNotificationsToasts } from './parts/notifications/membraneNotificationsToasts.js';
 
 export interface IWorkbenchOptions {
 
@@ -378,7 +378,9 @@ export class Workbench extends Layout {
 
 		// Instantiate Notification components
 		const notificationsCenter = this._register(instantiationService.createInstance(NotificationsCenter, this.mainContainer, notificationService.model));
-		const notificationsToasts = this._register(instantiationService.createInstance(NotificationsToasts, this.mainContainer, notificationService.model));
+		// MEMBRANE: Using our own toasts.
+		const notificationsToasts: MembraneNotificationsToasts = instantiationService.createInstance(MembraneNotificationsToasts, notificationService.model);
+		this._register(notificationsToasts);
 		this._register(instantiationService.createInstance(NotificationsAlerts, notificationService.model));
 		const notificationsStatus = instantiationService.createInstance(NotificationsStatus, notificationService.model);
 

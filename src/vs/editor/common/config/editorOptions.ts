@@ -6298,7 +6298,7 @@ export const EditorOptions = {
 		{ description: nls.localize('formatOnType', "Controls whether the editor should automatically format the line after typing.") }
 	)),
 	glyphMargin: register(new EditorBooleanOption(
-		EditorOption.glyphMargin, 'glyphMargin', true,
+		EditorOption.glyphMargin, 'glyphMargin', false,
 		{ description: nls.localize('glyphMargin', "Controls whether the editor should render the vertical glyph margin. Glyph margin is mostly used for debugging.") }
 	)),
 	gotoLocation: register(new EditorGoToLocation()),

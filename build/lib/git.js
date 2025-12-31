@@ -14,7 +14,24 @@ const fs_1 = __importDefault(require("fs"));
  * Returns the sha1 commit version of a repository or undefined in case of failure.
  */
 function getVersion(repo) {
-    const git = path_1.default.join(repo, '.git');
+    // MEMBRANE: make `getVersion` work when vscode is a submodule and it's .git was hoisted.
+    const maybeGit = path_1.default.join(repo, '.git');
+    const stat = fs_1.default.statSync(maybeGit);
+    let git;
+    if (stat.isFile()) {
+        const data =  fs_1.default.readFileSync(maybeGit, 'utf8');
+        const gitdir = data.match(/^gitdir: (.*)$/m)?.[1];
+        if (!gitdir) {
+            throw new Error(`Failed to parse .git submodule info in ${maybeGit}`);
+        }
+        git = path_1.default.join(repo, gitdir);
+    }
+    else if (stat.isDirectory()) {
+        git = maybeGit;
+    }
+    else {
+        return undefined;
+    }
     const headPath = path_1.default.join(git, 'HEAD');
     let head;
     try {

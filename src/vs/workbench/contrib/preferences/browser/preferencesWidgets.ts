@@ -284,7 +284,9 @@ export class SettingsTargetsWidget extends Widget {
 		this.resetLabels();
 		this.update();
 
-		this.settingsSwitcherBar.push([this.userLocalSettings, this.userRemoteSettings, this.workspaceSettings, this.folderSettingsAction]);
+		// MEMBRANE: Only show User settings tabs
+		this.settingsSwitcherBar.push([this.userLocalSettings, this.userRemoteSettings]);
+		// Was: this.settingsSwitcherBar.push([this.userLocalSettings, this.userRemoteSettings, this.workspaceSettings, this.folderSettingsAction]);
 	}
 
 	get settingsTarget(): SettingsTarget | null {

@@ -18,7 +18,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_BACKGROUND, TITLE_BAR_BORDER, WORKBENCH_BACKGROUND } from '../../../common/theme.js';
 import { isMacintosh, isWindows, isLinux, isWeb, isNative, platformLocale } from '../../../../base/common/platform.js';
 import { Color } from '../../../../base/common/color.js';
-import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, reset, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement } from '../../../../base/browser/dom.js';
+import { Dimension, append, $, prepend, reset, getWindow, getWindowId, getActiveDocument } from '../../../../base/browser/dom.js';
 import { CustomMenubarControl } from './menubarControl.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
@@ -47,7 +47,7 @@ import { ResolvedKeybinding } from '../../../../base/common/keybindings.js';
 import { EditorCommandsContextActionRunner } from '../editor/editorTabsControl.js';
 import { IEditorCommandsContext, IEditorPartOptionsChangeEvent, IToolbarActions } from '../../../common/editor.js';
 import { CodeWindow, mainWindow } from '../../../../base/browser/window.js';
-import { ACCOUNTS_ACTIVITY_TILE_ACTION, GLOBAL_ACTIVITY_TITLE_ACTION } from './titlebarActions.js';
+import { ACCOUNTS_ACTIVITY_TILE_ACTION } from './titlebarActions.js';
 import { IView } from '../../../../base/browser/ui/grid/grid.js';
 import { createInstantHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import { IBaseActionViewItemOptions } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
@@ -524,30 +524,31 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		// Windows / Linux: we only support the overall context menu on the title bar
 		// macOS: we support both the overall context menu and the title context menu.
 		//        in addition, we allow Cmd+click to bring up the title context menu.
-		{
-			this._register(addDisposableListener(this.rootContainer, EventType.CONTEXT_MENU, e => {
-				EventHelper.stop(e);
+		// MEMBRANE: Disabled context menu on titlebar to remove the settings menu
+		// {
+		// 	this._register(addDisposableListener(this.rootContainer, EventType.CONTEXT_MENU, e => {
+		// 		EventHelper.stop(e);
 
-				let targetMenu: MenuId;
-				if (isMacintosh && isHTMLElement(e.target) && isAncestor(e.target, this.title)) {
-					targetMenu = MenuId.TitleBarTitleContext;
-				} else {
-					targetMenu = MenuId.TitleBarContext;
-				}
+		// 		let targetMenu: MenuId;
+		// 		if (isMacintosh && isHTMLElement(e.target) && isAncestor(e.target, this.title)) {
+		// 			targetMenu = MenuId.TitleBarTitleContext;
+		// 		} else {
+		// 			targetMenu = MenuId.TitleBarContext;
+		// 		}
 
-				this.onContextMenu(e, targetMenu);
-			}));
+		// 		this.onContextMenu(e, targetMenu);
+		// 	}));
 
-			if (isMacintosh) {
-				this._register(addDisposableListener(this.title, EventType.MOUSE_DOWN, e => {
-					if (e.metaKey) {
-						EventHelper.stop(e, true /* stop bubbling to prevent command center from opening */);
+		// 	if (isMacintosh) {
+		// 		this._register(addDisposableListener(this.title, EventType.MOUSE_DOWN, e => {
+		// 			if (e.metaKey) {
+		// 				EventHelper.stop(e, true /* stop bubbling to prevent command center from opening */);
 
-						this.onContextMenu(e, MenuId.TitleBarTitleContext);
-					}
-				}, true /* capture phase to prevent command center from opening */));
-			}
-		}
+		// 				this.onContextMenu(e, MenuId.TitleBarTitleContext);
+		// 			}
+		// 		}, true /* capture phase to prevent command center from opening */));
+		// 	}
+		// }
 
 		this.updateStyles();
 
@@ -685,7 +686,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 					actions.primary.push(ACCOUNTS_ACTIVITY_TILE_ACTION);
 				}
 
-				actions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
+				// MEMBRANE: Don't add global activity action (hides settings icon)
+				// actions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
 			}
 
 			this.actionToolBar.setActions(prepareActions(actions.primary), prepareActions(actions.secondary));

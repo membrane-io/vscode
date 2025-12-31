@@ -311,7 +311,7 @@ export class SingleEditorTabsControl extends EditorTabsControl {
 					description
 				},
 				{
-					title: this.getHoverTitle(editor),
+					title: editor.getTitle(Verbosity.LONG),
 					italic: !isEditorPinned,
 					extraClasses: ['single-tab', 'title-label'].concat(editor.getLabelExtraClasses()),
 					fileDecorations: {

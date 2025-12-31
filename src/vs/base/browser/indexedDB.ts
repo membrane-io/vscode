@@ -6,6 +6,8 @@
 import { toErrorMessage } from '../common/errorMessage.js';
 import { ErrorNoTelemetry, getErrorMessage } from '../common/errors.js';
 import { mark } from '../common/performance.js';
+// eslint-disable-next-line local/code-import-patterns
+import { membraneApi } from '../../code/browser/workbench/membrane.js';
 
 class MissingStoresError extends Error {
 	constructor(readonly db: IDBDatabase) {
@@ -19,6 +21,8 @@ export class DBClosedError extends Error {
 		super(`IndexedDB database '${dbName}' is closed.`);
 	}
 }
+
+const userSettingsResource = '/User/settings.json';
 
 export class IndexedDB {
 
@@ -117,17 +121,64 @@ export class IndexedDB {
 		}
 		const transaction = this.database.transaction(store, transactionMode);
 		this.pendingTransactions.push(transaction);
-		return new Promise<T | T[]>((c, e) => {
-			transaction.oncomplete = () => {
-				if (Array.isArray(request)) {
-					c(request.map(r => r.result));
-				} else {
-					c(request.result);
+		// MEMBRANE
+		// Proxy to save indexeddb reqs
+		const requests: Array<{ prop: string; key: string; value?: unknown; request: IDBRequest }> = [];
+		const storeProxy = new Proxy(transaction.objectStore(store), {
+			get(target: IDBObjectStore, prop: string): unknown {
+				return (...args: unknown[]) => {
+					const result = (target[prop as keyof IDBObjectStore] as Function).apply(target, args);
+					requests.push({
+						prop,
+						key: (prop === 'get' ? args[0] : args[1]) as string,
+						value: prop === 'put' ? args[0] : undefined,
+						request: result
+					});
+					return result;
+				};
+			},
+		});
+
+		const dbOperations: IDBRequest<T> | IDBRequest<T>[] = dbRequestFn(storeProxy);
+		return new Promise<T | T[]>((resolve, reject) => {
+			transaction.oncomplete = async () => {
+				try {
+
+					const membraneRequests = requests.filter(req => isMembraneKey(req.key));
+					const res = await handleMembraneRequests(membraneRequests);
+					const getResult = (r: IDBRequest) => {
+						// find the req
+						const req = requests.find(req => req.request === r);
+						if (!req) {
+							return r.result;
+						}
+
+						// Membrane keys
+						if (isMembraneKey(req.key)) {
+							return res.find(mr => mr.key === req.key)?.value;
+						}
+
+						const isGetAllKeys = req.prop === 'getAllKeys';
+						const isUserDataStore =
+							r.source instanceof IDBObjectStore &&
+							r.source.name === 'vscode-userdata-store';
+
+						if (isGetAllKeys && isUserDataStore) {
+							const result = Array.isArray(r.result) ? r.result : [];
+							return result.includes(userSettingsResource) ? result : [...result, userSettingsResource];
+						}
+
+						return r.result;
+					};
+
+					resolve(Array.isArray(dbOperations) ? dbOperations.map(getResult) : getResult(dbOperations));
+				} catch (error) {
+					console.error('Error in transaction oncomplete:', error);
+					reject(error);
 				}
 			};
-			transaction.onerror = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
-			transaction.onabort = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
-			const request = dbRequestFn(transaction.objectStore(store));
+			transaction.onerror = () => reject(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
+			transaction.onabort = () => reject(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
 		}).finally(() => this.pendingTransactions.splice(this.pendingTransactions.indexOf(transaction), 1));
 	}
 
@@ -174,4 +225,43 @@ export class IndexedDB {
 			transaction.onerror = () => onError(transaction.error);
 		}).finally(() => this.pendingTransactions.splice(this.pendingTransactions.indexOf(transaction), 1));
 	}
+}
+
+
+function isMembraneKey(key: unknown): boolean {
+	const MEMBRANE_KEYS = [
+		'/User/settings.json',
+		'/User/keybindings.json'
+	];
+	return typeof key === 'string' && MEMBRANE_KEYS.includes(key);
+}
+
+async function handleMembraneRequests(requests: Array<{ prop: string; key: string; value?: unknown }>): Promise<Array<{ key: string; value: unknown }>> {
+	const handleGet = async (key: string) => {
+		try {
+			const res = await membraneApi('GET', `/settings?keys=${key}`);
+			const value = res.status === 404 ? undefined : (await res.json())[key];
+			return { key, value };
+		} catch (error) {
+			console.log(`Error fetching data for key ${key}:`, error);
+			return { key, value: undefined };
+		}
+	};
+
+	const handlePut = async (key: string, value: unknown) => {
+		try {
+			const stringValue = value instanceof Uint8Array
+				? new TextDecoder().decode(value)
+				: value;
+			await membraneApi('POST', '/settings', JSON.stringify({ key, value: stringValue }));
+			return { key, value: true };
+		} catch (error) {
+			console.log(`Error putting data for key ${key}:`, error);
+			return { key, value: undefined };
+		}
+	};
+
+	return Promise.all(requests.map(({ prop, key, value }) =>
+		prop === 'get' ? handleGet(key) : handlePut(key, value)
+	));
 }

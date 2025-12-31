@@ -4,6 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 /// <reference lib='webworker' />
 
+// Force webpack to bundle events module
+import 'events';
+
 import ts from 'typescript/lib/tsserverlibrary';
 import { URI } from 'vscode-uri';
 import { FileWatcherManager } from './fileWatcherManager';
@@ -26,7 +29,8 @@ async function initializeSession(
 	extensionUri: URI,
 	ports: { tsserver: MessagePort; sync: MessagePort; watcher: MessagePort },
 ): Promise<void> {
-	const logLevel = parseLogLevel(findArgument(args, '--logVerbosity'));
+	// MEMBRANE: Can be set to "normal" or "verbose" for debugging
+	const logLevel = parseLogLevel(findArgument(args, '--logVerbosity')); // ?? "normal");
 	const logger = new Logger(logLevel);
 
 	const modeOrUnknown = parseServerMode(args);

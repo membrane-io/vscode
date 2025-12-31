@@ -19,6 +19,7 @@ const tsLoaderOptions = {
 		'sourceMap': true,
 	},
 	onlyCompileBundledFiles: true,
+	transpileOnly: true, // Skip type checking to avoid TypeScript version incompatibilities
 };
 
 function withNodeDefaults(/**@type WebpackConfig & { context: string }*/extConfig) {
@@ -108,13 +109,23 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 	const defaultConfig = {
 		mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 		target: 'webworker', // extensions run in a webworker context
+		node: false, // Disable Node.js polyfills - we handle them via fallback
 		resolve: {
+			alias: {
+				// MEMBRANE: ts-plugin is bundled inside typescript-language-features since vscode web doesn't support the
+				// normal typescriptServerPlugins extension setting.
+				'./platform/vscode': path.resolve(import.meta.dirname, '../../ts-plugin/src/platform/browser.ts'),
+				// Ensure 'events' module is resolved correctly for browser builds
+				'events': require.resolve('events'),
+			},
 			mainFields: ['browser', 'module', 'main'],
 			extensions: ['.ts', '.js'], // support ts-files and js-files
 			fallback: {
-				'path': require.resolve('path-browserify'),
 				'os': require.resolve('os-browserify'),
-				'util': require.resolve('util')
+				'events': require.resolve('events/'),
+				// 'os': require.resolve('os-browserify'),
+				'path': require.resolve('path-browserify'),
+				'util': require.resolve('util/')
 			},
 			extensionAlias: {
 				// this is needed to resolve dynamic imports that now require the .js extension
@@ -122,30 +133,36 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 			},
 		},
 		module: {
-			rules: [{
-				test: /\.ts$/,
-				exclude: /node_modules/,
-				use: [
-					{
-						// configure TypeScript loader:
-						// * enable sources maps for end-to-end source maps
-						loader: 'ts-loader',
-						options: {
-							...tsLoaderOptions,
-							//							...(additionalOptions ? {} : { configFile: additionalOptions.configFile }),
-						}
-					},
-					{
-						loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
-						options: {
-							configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
+			rules: [
+				// MEMBRANE: see ts-plugin/src/membraneLib.ts
+				{
+					test: /\.d\.ts$/,
+					type: 'asset/source'
+				},
+				{
+					test: /\.ts$/,
+					exclude: /node_modules|typings\/.*\.d\.ts$/, // Exclude node_modules and .d.ts files in the typings folder
+					use: [
+						{
+							// configure TypeScript loader:
+							// * enable sources maps for end-to-end source maps
+							loader: 'ts-loader',
+							options: {
+								...tsLoaderOptions,
+								...(additionalOptions?.configFile ? { configFile: additionalOptions.configFile } : {}),
+							}
 						},
-					},
-				]
-			}, {
-				test: /\.wasm$/,
-				type: 'asset/inline'
-			}]
+						{
+							loader: path.resolve(import.meta.dirname, 'mangle-loader.js'),
+							options: {
+								configFile: path.join(extConfig.context, additionalOptions?.configFile ?? 'tsconfig.json')
+							},
+						},
+					]
+				}, {
+					test: /\.wasm$/,
+					type: 'asset/inline'
+				}]
 		},
 		externals: {
 			'vscode': 'commonjs vscode', // ignored because it doesn't exist,
@@ -196,7 +213,15 @@ function browserPlugins(context) {
 			'process.platform': JSON.stringify('web'),
 			'process.env': JSON.stringify({}),
 			'process.env.BROWSER_ENV': JSON.stringify('true')
-		})
+		}),
+		new webpack.ProvidePlugin({
+			'events': require.resolve('events')
+		}),
+		// Ensure events module is bundled
+		new webpack.NormalModuleReplacementPlugin(
+			/^events$/,
+			require.resolve('events')
+		)
 	];
 }
 

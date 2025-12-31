@@ -12,6 +12,10 @@
 	display: flex;
 }
 
+.monaco-workbench .part:not(.sidebar) > .composite.title > .back-to-membrane-navigator {
+	display: none;
+}
+
 .monaco-workbench .part > .composite.title > .title-actions {
 	flex: 1;
 	padding-left: 8px;

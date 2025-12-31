@@ -37,6 +37,7 @@ import { IHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegate.js'
 import { createInstantHoverDelegate, getDefaultHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import type { IHoverService } from '../../../platform/hover/browser/hover.js';
 
+
 export interface ICompositeTitleLabel {
 
 	/**

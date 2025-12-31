@@ -37,6 +37,7 @@ interface TsInternals extends TsModule {
 	getDirectoryPath: (path: string) => string;
 	directorySeparator: string;
 }
+import membraneTsPlugin from '../../../../../ts-plugin/src/index';
 
 type ServerHostWithImport = ts.server.ServerHost & { importPlugin(root: string, moduleName: string): Promise<ts.server.ModuleImportResult> };
 
@@ -72,7 +73,36 @@ function createServerHost(
 	const textEncoder = new TextEncoder();
 
 	return {
-		watchFile: watchManager.watchFile.bind(watchManager),
+		watchFile: (
+			path: string,
+			callback: ts.FileWatcherCallback,
+			pollingInterval?: number,
+			options?: ts.WatchOptions,
+		): ts.FileWatcher => {
+			const wrappedCallback: ts.FileWatcherCallback = (
+				filePath: string,
+				eventKind: ts.FileWatcherEventKind,
+			) => {
+				// MEMBRANE: Ignore package.json created events, removed on typescript@v5.5
+				// https://github.com/microsoft/TypeScript/commit/f3f70df94e120bab69dd766bacd22089347b71c9
+				// only for memfs/ts-nul-authority/{program}/package.json
+				if (
+					filePath.endsWith("package.json") &&
+					/^\/memfs\/ts-nul-authority\/[^/]+\/package\.json$/.test(filePath) &&
+					eventKind === ts.FileWatcherEventKind.Created
+				) {
+					return;
+				}
+				callback(filePath, eventKind);
+			};
+
+			return watchManager.watchFile(
+				path,
+				wrappedCallback,
+				pollingInterval,
+				options,
+			);
+		},
 		watchDirectory: watchManager.watchDirectory.bind(watchManager),
 		setTimeout(callback: (...args: unknown[]) => void, ms: number, ...args: unknown[]): unknown {
 			return setTimeout(callback, ms, ...args);
@@ -87,27 +117,16 @@ function createServerHost(
 			this.clearTimeout(timeoutId);
 		},
 		importPlugin: async (root, moduleName) => {
-			const packageRoot = combinePaths(root, moduleName);
-
-			let packageJson: any | undefined;
-			try {
-				const packageJsonResponse = await fetch(combinePaths(packageRoot, 'package.json'));
-				packageJson = await packageJsonResponse.json();
-			} catch (e) {
-				return { module: undefined, error: new Error(`Could not load plugin. Could not load 'package.json'.`) };
+			if (moduleName !== 'membrane-ts-plugin') {
+				throw new Error('Only the Membrane TS plugin is supported');
 			}
-
-			const browser = packageJson.browser;
-			if (!browser) {
-				return { module: undefined, error: new Error(`Could not load plugin. No 'browser' field found in package.json.`) };
-			}
-
-			const scriptPath = combinePaths(packageRoot, browser);
+			const scriptPath = combinePaths(root, moduleName);
 			try {
-				const { default: module } = await import(/* webpackIgnore: true */ scriptPath);
-				return { module, error: undefined };
+				// Dynamically import the script using the constructed path
+				// This assumes the script is accessible via your web server and is correctly set up to be imported as a module
+				return { module: membraneTsPlugin, error: undefined };
 			} catch (e) {
-				return { module: undefined, error: e };
+				return { module: undefined, error: new Error(`Could not load plugin from ${scriptPath}`) };
 			}
 		},
 		args: Array.from(args),

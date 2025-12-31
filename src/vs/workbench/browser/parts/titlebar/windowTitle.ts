@@ -4,24 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from '../../../../nls.js';
-import { dirname, basename } from '../../../../base/common/resources.js';
 import { ITitleProperties, ITitleVariable } from './titlebarPart.js';
 import { IConfigurationService, IConfigurationChangeEvent } from '../../../../platform/configuration/common/configuration.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
-import { EditorResourceAccessor, Verbosity, SideBySideEditor } from '../../../common/editor.js';
+import { Verbosity } from '../../../common/editor.js';
 import { IBrowserWorkbenchEnvironmentService } from '../../../services/environment/browser/environmentService.js';
-import { IWorkspaceContextService, WorkbenchState, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { isWindows, isWeb, isMacintosh, isNative } from '../../../../base/common/platform.js';
-import { URI } from '../../../../base/common/uri.js';
-import { trim } from '../../../../base/common/strings.js';
-import { template } from '../../../../base/common/labels.js';
-import { ILabelService, Verbosity as LabelVerbosity } from '../../../../platform/label/common/label.js';
+import { ILabelService } from '../../../../platform/label/common/label.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { RunOnceScheduler } from '../../../../base/common/async.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
-import { Schemas } from '../../../../base/common/network.js';
-import { getVirtualWorkspaceLocation } from '../../../../platform/workspace/common/virtualWorkspace.js';
 import { IUserDataProfileService } from '../../../services/userDataProfile/common/userDataProfile.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from '../../../../editor/browser/editorBrowser.js';
@@ -93,7 +87,8 @@ export class WindowTitle extends Disposable {
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IUserDataProfileService private readonly userDataProfileService: IUserDataProfileService,
-		@IProductService private readonly productService: IProductService,
+		// @ts-ignore - Unused due to MEMBRANE customization (commented out code)
+		@IProductService private readonly _productService: IProductService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IDecorationsService private readonly decorationsService: IDecorationsService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
@@ -187,26 +182,9 @@ export class WindowTitle extends Disposable {
 	private doUpdateTitle(): void {
 		const title = this.getFullWindowTitle();
 		if (title !== this.title) {
-
-			// Always set the native window title to identify us properly to the OS
-			let nativeTitle = title;
-			if (!trim(nativeTitle)) {
-				nativeTitle = this.productService.nameLong;
-			}
-
+			// MEMBRANE: Set window title to empty string
 			const window = getWindowById(this.windowId, true).window;
-			if (!window.document.title && isMacintosh && nativeTitle === this.productService.nameLong) {
-				// TODO@electron macOS: if we set a window title for
-				// the first time and it matches the one we set in
-				// `windowImpl.ts` somehow the window does not appear
-				// in the "Windows" menu. As such, we set the title
-				// briefly to something different to ensure macOS
-				// recognizes we have a window.
-				// See: https://github.com/microsoft/vscode/issues/191288
-				window.document.title = `${this.productService.nameLong} ${WindowTitle.TITLE_DIRTY}`;
-			}
-
-			window.document.title = nativeTitle;
+			window.document.title = '';
 			this.title = title;
 
 			this.onDidChangeEmitter.fire();
@@ -214,19 +192,8 @@ export class WindowTitle extends Disposable {
 	}
 
 	private getFullWindowTitle(): string {
-		const { prefix, suffix } = this.getTitleDecorations();
-
-		let title = this.getWindowTitle() || this.productService.nameLong;
-		if (prefix) {
-			title = `${prefix} ${title}`;
-		}
-
-		if (suffix) {
-			title = `${title} ${suffix}`;
-		}
-
-		// Replace non-space whitespace
-		return title.replace(/[^\S ]/g, ' ');
+		// MEMBRANE: Don't show anything in the window title
+		return '';
 	}
 
 	getTitleDecorations() {
@@ -301,105 +268,108 @@ export class WindowTitle extends Disposable {
 	 * {activeEditorState}: e.g. Modified
 	 */
 	getWindowTitle(): string {
-		const editor = this.editorService.activeEditor;
-		const workspace = this.contextService.getWorkspace();
+		// MEMBRANE: Don't show filename in window title, return empty string
+		return '';
 
-		// Compute root
-		let root: URI | undefined;
-		if (workspace.configuration) {
-			root = workspace.configuration;
-		} else if (workspace.folders.length) {
-			root = workspace.folders[0].uri;
-		}
-
-		// Compute active editor folder
-		const editorResource = EditorResourceAccessor.getOriginalUri(editor, { supportSideBySide: SideBySideEditor.PRIMARY });
-		let editorFolderResource = editorResource ? dirname(editorResource) : undefined;
-		if (editorFolderResource?.path === '.') {
-			editorFolderResource = undefined;
-		}
-
-		// Compute folder resource
-		// Single Root Workspace: always the root single workspace in this case
-		// Otherwise: root folder of the currently active file if any
-		let folder: IWorkspaceFolder | undefined = undefined;
-		if (this.contextService.getWorkbenchState() === WorkbenchState.FOLDER) {
-			folder = workspace.folders[0];
-		} else if (editorResource) {
-			folder = this.contextService.getWorkspaceFolder(editorResource) ?? undefined;
-		}
-
-		// Compute remote
-		// vscode-remtoe: use as is
-		// otherwise figure out if we have a virtual folder opened
-		let remoteName: string | undefined = undefined;
-		if (this.environmentService.remoteAuthority && !isWeb) {
-			remoteName = this.labelService.getHostLabel(Schemas.vscodeRemote, this.environmentService.remoteAuthority);
-		} else {
-			const virtualWorkspaceLocation = getVirtualWorkspaceLocation(workspace);
-			if (virtualWorkspaceLocation) {
-				remoteName = this.labelService.getHostLabel(virtualWorkspaceLocation.scheme, virtualWorkspaceLocation.authority);
-			}
-		}
-
-		// Variables
-		const activeEditorShort = editor ? editor.getTitle(Verbosity.SHORT) : '';
-		const activeEditorMedium = editor ? editor.getTitle(Verbosity.MEDIUM) : activeEditorShort;
-		const activeEditorLong = editor ? editor.getTitle(Verbosity.LONG) : activeEditorMedium;
-		const activeFolderShort = editorFolderResource ? basename(editorFolderResource) : '';
-		const activeFolderMedium = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource, { relative: true }) : '';
-		const activeFolderLong = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource) : '';
-		const rootName = this.labelService.getWorkspaceLabel(workspace);
-		const rootNameShort = this.labelService.getWorkspaceLabel(workspace, { verbose: LabelVerbosity.SHORT });
-		const rootPath = root ? this.labelService.getUriLabel(root) : '';
-		const folderName = folder ? folder.name : '';
-		const folderPath = folder ? this.labelService.getUriLabel(folder.uri) : '';
-		const dirty = editor?.isDirty() && !editor.isSaving() ? WindowTitle.TITLE_DIRTY : '';
-		const appName = this.productService.nameLong;
-		const profileName = this.userDataProfileService.currentProfile.isDefault ? '' : this.userDataProfileService.currentProfile.name;
-		const focusedView: string = this.viewsService.getFocusedViewName();
-		const activeEditorState = editorResource ? this.decorationsService.getDecoration(editorResource, false)?.tooltip : undefined;
-
-		const variables: Record<string, string> = {};
-		for (const [contextKey, name] of this.variables) {
-			variables[name] = this.contextKeyService.getContextKeyValue(contextKey) ?? '';
-		}
-
-		let titleTemplate = this.configurationService.getValue<string>(WindowSettingNames.title);
-		if (typeof titleTemplate !== 'string') {
-			titleTemplate = defaultWindowTitle;
-		}
-
-		if (!this.titleIncludesEditorState && this.accessibilityService.isScreenReaderOptimized() && this.configurationService.getValue('accessibility.windowTitleOptimized')) {
-			titleTemplate += '${separator}${activeEditorState}';
-		}
-
-		let separator = this.configurationService.getValue<string>(WindowSettingNames.titleSeparator);
-		if (typeof separator !== 'string') {
-			separator = defaultWindowTitleSeparator;
-		}
-
-		return template(titleTemplate, {
-			...variables,
-			activeEditorShort,
-			activeEditorLong,
-			activeEditorMedium,
-			activeFolderShort,
-			activeFolderMedium,
-			activeFolderLong,
-			rootName,
-			rootPath,
-			rootNameShort,
-			folderName,
-			folderPath,
-			dirty,
-			appName,
-			remoteName,
-			profileName,
-			focusedView,
-			activeEditorState,
-			separator: { label: separator }
-		});
+		// Original implementation (commented out for MEMBRANE customization):
+		// const workspace = this.contextService.getWorkspace();
+		//
+		// // Compute root
+		// let root: URI | undefined;
+		// if (workspace.configuration) {
+		// 	root = workspace.configuration;
+		// } else if (workspace.folders.length) {
+		// 	root = workspace.folders[0].uri;
+		// }
+		//
+		// // Compute active editor folder
+		// const editorResource = EditorResourceAccessor.getOriginalUri(editor, { supportSideBySide: SideBySideEditor.PRIMARY });
+		// let editorFolderResource = editorResource ? dirname(editorResource) : undefined;
+		// if (editorFolderResource?.path === '.') {
+		// 	editorFolderResource = undefined;
+		// }
+		//
+		// // Compute folder resource
+		// // Single Root Workspace: always the root single workspace in this case
+		// // Otherwise: root folder of the currently active file if any
+		// let folder: IWorkspaceFolder | undefined = undefined;
+		// if (this.contextService.getWorkbenchState() === WorkbenchState.FOLDER) {
+		// 	folder = workspace.folders[0];
+		// } else if (editorResource) {
+		// 	folder = this.contextService.getWorkspaceFolder(editorResource) ?? undefined;
+		// }
+		//
+		// // Compute remote
+		// // vscode-remtoe: use as is
+		// // otherwise figure out if we have a virtual folder opened
+		// let remoteName: string | undefined = undefined;
+		// if (this.environmentService.remoteAuthority && !isWeb) {
+		// 	remoteName = this.labelService.getHostLabel(Schemas.vscodeRemote, this.environmentService.remoteAuthority);
+		// } else {
+		// 	const virtualWorkspaceLocation = getVirtualWorkspaceLocation(workspace);
+		// 	if (virtualWorkspaceLocation) {
+		// 		remoteName = this.labelService.getHostLabel(virtualWorkspaceLocation.scheme, virtualWorkspaceLocation.authority);
+		// 	}
+		// }
+		//
+		// // Variables
+		// const activeEditorShort = editor ? editor.getTitle(Verbosity.SHORT) : '';
+		// const activeEditorMedium = editor ? editor.getTitle(Verbosity.MEDIUM) : activeEditorShort;
+		// const activeEditorLong = editor ? editor.getTitle(Verbosity.LONG) : activeEditorMedium;
+		// const activeFolderShort = editorFolderResource ? basename(editorFolderResource) : '';
+		// const activeFolderMedium = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource, { relative: true }) : '';
+		// const activeFolderLong = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource) : '';
+		// const rootName = this.labelService.getWorkspaceLabel(workspace);
+		// const rootNameShort = this.labelService.getWorkspaceLabel(workspace, { verbose: LabelVerbosity.SHORT });
+		// const rootPath = root ? this.labelService.getUriLabel(root) : '';
+		// const folderName = folder ? folder.name : '';
+		// const folderPath = folder ? this.labelService.getUriLabel(folder.uri) : '';
+		// const dirty = editor?.isDirty() && !editor.isSaving() ? WindowTitle.TITLE_DIRTY : '';
+		// const appName = this.productService.nameLong;
+		// const profileName = this.userDataProfileService.currentProfile.isDefault ? '' : this.userDataProfileService.currentProfile.name;
+		// const focusedView: string = this.viewsService.getFocusedViewName();
+		// const activeEditorState = editorResource ? this.decorationsService.getDecoration(editorResource, false)?.tooltip : undefined;
+		//
+		// const variables: Record<string, string> = {};
+		// for (const [contextKey, name] of this.variables) {
+		// 	variables[name] = this.contextKeyService.getContextKeyValue(contextKey) ?? '';
+		// }
+		//
+		// let titleTemplate = this.configurationService.getValue<string>(WindowSettingNames.title);
+		// if (typeof titleTemplate !== 'string') {
+		// 	titleTemplate = defaultWindowTitle;
+		// }
+		//
+		// if (!this.titleIncludesEditorState && this.accessibilityService.isScreenReaderOptimized() && this.configurationService.getValue('accessibility.windowTitleOptimized')) {
+		// 	titleTemplate += '${separator}${activeEditorState}';
+		// }
+		//
+		// let separator = this.configurationService.getValue<string>(WindowSettingNames.titleSeparator);
+		// if (typeof separator !== 'string') {
+		// 	separator = defaultWindowTitleSeparator;
+		// }
+		//
+		// return template(titleTemplate, {
+		// 	...variables,
+		// 	activeEditorShort,
+		// 	activeEditorLong,
+		// 	activeEditorMedium,
+		// 	activeFolderShort,
+		// 	activeFolderMedium,
+		// 	activeFolderLong,
+		// 	rootName,
+		// 	rootPath,
+		// 	rootNameShort,
+		// 	folderName,
+		// 	folderPath,
+		// 	dirty,
+		// 	appName,
+		// 	remoteName,
+		// 	profileName,
+		// 	focusedView,
+		// 	activeEditorState,
+		// 	separator: { label: separator }
+		// });
 	}
 
 	isCustomTitleFormat(): boolean {

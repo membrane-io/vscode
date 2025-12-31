@@ -84,7 +84,7 @@ export class PanelPart extends AbstractPaneCompositePart {
 	) {
 		super(
 			Parts.PANEL_PART,
-			{ hasTitle: true, trailingSeparator: true },
+			{ hasTitle: true },
 			PanelPart.activePanelSettingsKey,
 			ActivePanelContext.bindTo(contextKeyService),
 			PanelFocusContext.bindTo(contextKeyService),
@@ -100,6 +100,7 @@ export class PanelPart extends AbstractPaneCompositePart {
 			hoverService,
 			instantiationService,
 			themeService,
+			commandService,
 			viewDescriptorService,
 			contextKeyService,
 			extensionService,

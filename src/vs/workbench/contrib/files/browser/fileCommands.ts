@@ -5,6 +5,7 @@
 
 import * as nls from '../../../../nls.js';
 import { URI } from '../../../../base/common/uri.js';
+import { hasKey } from '../../../../base/common/types.js';
 import { EditorResourceAccessor, IEditorCommandsContext, SideBySideEditor, IEditorIdentifier, SaveReason, EditorsOrder, EditorInputCapabilities } from '../../../common/editor.js';
 import { SideBySideEditorInput } from '../../../common/editor/sideBySideEditorInput.js';
 import { IWindowOpenable, IOpenWindowOptions, isWorkspaceToOpen, IOpenEmptyWindowOptions } from '../../../../platform/window/common/window.js';
@@ -23,7 +24,7 @@ import { KeyMod, KeyCode, KeyChord } from '../../../../base/common/keyCodes.js';
 import { isWeb, isWindows } from '../../../../base/common/platform.js';
 import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
 import { getResourceForCommand, getMultiSelectedResources, getOpenEditorsViewMultiSelection, IExplorerService } from './files.js';
-import { IWorkspaceEditingService } from '../../../services/workspaces/common/workspaceEditing.js';
+// import { IWorkspaceEditingService } from '../../../services/workspaces/common/workspaceEditing.js';
 import { resolveCommandsContext } from '../../../browser/parts/editor/editorCommandsContext.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
@@ -37,7 +38,7 @@ import { IEnvironmentService } from '../../../../platform/environment/common/env
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { EmbeddedCodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/embeddedCodeEditorWidget.js';
 import { ITextFileService } from '../../../services/textfile/common/textfiles.js';
-import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
+// import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { isCancellationError } from '../../../../base/common/errors.js';
 import { IAction, toAction } from '../../../../base/common/actions.js';
 import { EditorOpenSource, EditorResolution } from '../../../../platform/editor/common/editor.js';
@@ -48,7 +49,7 @@ import { ViewContainerLocation } from '../../../common/views.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { OPEN_TO_SIDE_COMMAND_ID, COMPARE_WITH_SAVED_COMMAND_ID, SELECT_FOR_COMPARE_COMMAND_ID, ResourceSelectedForCompareContext, COMPARE_SELECTED_COMMAND_ID, COMPARE_RESOURCE_COMMAND_ID, COPY_PATH_COMMAND_ID, COPY_RELATIVE_PATH_COMMAND_ID, REVEAL_IN_EXPLORER_COMMAND_ID, OPEN_WITH_EXPLORER_COMMAND_ID, SAVE_FILE_COMMAND_ID, SAVE_FILE_WITHOUT_FORMATTING_COMMAND_ID, SAVE_FILE_AS_COMMAND_ID, SAVE_ALL_COMMAND_ID, SAVE_ALL_IN_GROUP_COMMAND_ID, SAVE_FILES_COMMAND_ID, REVERT_FILE_COMMAND_ID, REMOVE_ROOT_FOLDER_COMMAND_ID, PREVIOUS_COMPRESSED_FOLDER, NEXT_COMPRESSED_FOLDER, FIRST_COMPRESSED_FOLDER, LAST_COMPRESSED_FOLDER, NEW_UNTITLED_FILE_COMMAND_ID, NEW_UNTITLED_FILE_LABEL, NEW_FILE_COMMAND_ID } from './fileConstants.js';
 import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
-import { RemoveRootFolderAction } from '../../../browser/actions/workspaceActions.js';
+// import { RemoveRootFolderAction } from '../../../browser/actions/workspaceActions.js';
 import { OpenEditorsView } from './views/openEditorsView.js';
 import { ExplorerView } from './views/explorerView.js';
 import { IListService } from '../../../../platform/list/browser/listService.js';
@@ -562,7 +563,13 @@ CommandsRegistry.registerCommand({
 
 CommandsRegistry.registerCommand({
 	id: REMOVE_ROOT_FOLDER_COMMAND_ID,
-	handler: (accessor, resource: URI | object) => {
+	handler: async (accessor, resource: URI | object) => {
+		// MEMBRANE: We override this functionality in vscode-extension
+		const commandService = accessor.get(ICommandService);
+		const name = hasKey(resource, { path: true }) ? resource.path.slice(1) : undefined;
+		commandService.executeCommand('membrane.deleteProgram', { name });
+		/*
+		const workspaceEditingService = accessor.get(IWorkspaceEditingService);
 		const contextService = accessor.get(IWorkspaceContextService);
 		const uriIdentityService = accessor.get(IUriIdentityService);
 		const workspace = contextService.getWorkspace();
@@ -578,6 +585,7 @@ CommandsRegistry.registerCommand({
 
 		const workspaceEditingService = accessor.get(IWorkspaceEditingService);
 		return workspaceEditingService.removeFolders(resources);
+		*/
 	}
 });
 

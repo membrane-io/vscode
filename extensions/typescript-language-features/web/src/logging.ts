@@ -21,6 +21,8 @@ export class Logger {
 		const doLog = typeof logLevel === 'undefined'
 			? (_message: string) => { }
 			: (message: string) => { postMessage({ type: 'log', body: message }); };
+		// MEMBRANE: uncomment to see the logs in the console
+		// : (message: string) => { console.log(message) }
 
 		this.tsLogger = {
 			close: () => { },

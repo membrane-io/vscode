@@ -373,6 +373,46 @@ function isWebExtension(manifest: IExtensionManifest): boolean {
 	return true;
 }
 
+const allowedExtensions = [
+	'configuration-editing',
+	'css',
+	'css-language-features',
+	'diff',
+	'emmet',
+	'handlebars',
+	'html',
+	'html-language-features',
+	'javascript',
+	'json',
+	'json-language-features',
+	'log',
+	'markdown',
+	'markdown-basics',
+	'markdown-language-features',
+	'markdown-math',
+	'media-preview',
+	'merge-conflict',
+	'microsoft-authentication',
+	'npm',
+	'php',
+	'references-view',
+	'scss',
+	'search-result',
+	'simple-browser',
+	'sql',
+	'theme-defaults',
+	'theme-solarized-dark',
+	'theme-solarized-light',
+	'typescript',
+	'typescript-basics',
+	'typescript-language-features',
+	'xml',
+	'yaml',
+];
+export function isAllowedInMembrane(name: string): boolean {
+	return allowedExtensions.some(allowedExtensionName => allowedExtensionName === name);
+}
+
 /**
  * Package local extensions that are known to not have native dependencies. Mutually exclusive to {@link packageNativeLocalExtensionsStream}.
  * @param forWeb build the extensions that have web targets
@@ -427,6 +467,7 @@ function doPackageLocalExtensionsStream(forWeb: boolean, disableMangle: boolean,
 			.filter(({ name }) => native ? nativeExtensionsSet.has(name) : !nativeExtensionsSet.has(name))
 			.filter(({ name }) => excludedExtensions.indexOf(name) === -1)
 			.filter(({ name }) => builtInExtensions.every(b => b.name !== name))
+			.filter(({ name }) => isAllowedInMembrane(name))
 			.filter(({ manifestPath }) => (forWeb ? isWebExtension(require(manifestPath)) : true))
 	);
 	const localExtensionsStream = minifyExtensionResources(
@@ -508,6 +549,11 @@ export function scanBuiltinExtensions(extensionsRoot: string, exclude: string[] 
 			}
 			const packageJSON = JSON.parse(fs.readFileSync(packageJSONPath).toString('utf8'));
 			if (!isWebExtension(packageJSON)) {
+				continue;
+			}
+
+			// MEMBRANE: only include the minimum set of extensions
+			if (!isAllowedInMembrane(packageJSON.name)) {
 				continue;
 			}
 			const children = fs.readdirSync(path.join(extensionsRoot, extensionFolder));

@@ -7,11 +7,17 @@ import { $, append, clearNode, h } from '../../../../base/browser/dom.js';
 import { KeybindingLabel } from '../../../../base/browser/ui/keybindingLabel/keybindingLabel.js';
 import { coalesce, shuffle } from '../../../../base/common/arrays.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
-import { isMacintosh, isWeb, OS } from '../../../../base/common/platform.js';
+import {
+	// isMacintosh,
+	isWeb, OS
+} from '../../../../base/common/platform.js';
 import { localize } from '../../../../nls.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	// ContextKeyExpr,
+	ContextKeyExpression, IContextKeyService
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../../../platform/storage/common/storage.js';
 import { defaultKeybindingLabelStyles } from '../../../../platform/theme/browser/defaultStyles.js';
@@ -27,27 +33,28 @@ interface WatermarkEntry {
 	};
 }
 
-const showCommands: WatermarkEntry = { text: localize('watermark.showCommands', "Show All Commands"), id: 'workbench.action.showCommands' };
-const gotoFile: WatermarkEntry = { text: localize('watermark.quickAccess', "Go to File"), id: 'workbench.action.quickOpen' };
-const openFile: WatermarkEntry = { text: localize('watermark.openFile', "Open File"), id: 'workbench.action.files.openFile' };
-const openFolder: WatermarkEntry = { text: localize('watermark.openFolder', "Open Folder"), id: 'workbench.action.files.openFolder' };
-const openFileOrFolder: WatermarkEntry = { text: localize('watermark.openFileFolder', "Open File or Folder"), id: 'workbench.action.files.openFileFolder' };
-const openRecent: WatermarkEntry = { text: localize('watermark.openRecent', "Open Recent"), id: 'workbench.action.openRecent' };
-const newUntitledFile: WatermarkEntry = { text: localize('watermark.newUntitledFile', "New Untitled Text File"), id: 'workbench.action.files.newUntitledFile' };
-const findInFiles: WatermarkEntry = { text: localize('watermark.findInFiles', "Find in Files"), id: 'workbench.action.findInFiles' };
-const toggleTerminal: WatermarkEntry = { text: localize({ key: 'watermark.toggleTerminal', comment: ['toggle is a verb here'] }, "Toggle Terminal"), id: 'workbench.action.terminal.toggleTerminal', when: { web: ContextKeyExpr.equals('terminalProcessSupported', true) } };
-const startDebugging: WatermarkEntry = { text: localize('watermark.startDebugging', "Start Debugging"), id: 'workbench.action.debug.start', when: { web: ContextKeyExpr.equals('terminalProcessSupported', true) } };
-const openSettings: WatermarkEntry = { text: localize('watermark.openSettings', "Open Settings"), id: 'workbench.action.openSettings' };
+// MEMBRANE: rm watermark hotkeys
+// const showCommands: WatermarkEntry = { text: localize('watermark.showCommands', "Show All Commands"), id: 'workbench.action.showCommands' };
+// const gotoFile: WatermarkEntry = { text: localize('watermark.quickAccess', "Go to File"), id: 'workbench.action.quickOpen' };
+// const openFile: WatermarkEntry = { text: localize('watermark.openFile', "Open File"), id: 'workbench.action.files.openFile' };
+// const openFolder: WatermarkEntry = { text: localize('watermark.openFolder', "Open Folder"), id: 'workbench.action.files.openFolder' };
+// const openFileOrFolder: WatermarkEntry = { text: localize('watermark.openFileFolder', "Open File or Folder"), id: 'workbench.action.files.openFileFolder' };
+// const openRecent: WatermarkEntry = { text: localize('watermark.openRecent', "Open Recent"), id: 'workbench.action.openRecent' };
+// const newUntitledFile: WatermarkEntry = { text: localize('watermark.newUntitledFile', "New Untitled Text File"), id: 'workbench.action.files.newUntitledFile' };
+// const findInFiles: WatermarkEntry = { text: localize('watermark.findInFiles', "Find in Files"), id: 'workbench.action.findInFiles' };
+// const toggleTerminal: WatermarkEntry = { text: localize({ key: 'watermark.toggleTerminal', comment: ['toggle is a verb here'] }, "Toggle Terminal"), id: 'workbench.action.terminal.toggleTerminal', when: { web: ContextKeyExpr.equals('terminalProcessSupported', true) } };
+// const startDebugging: WatermarkEntry = { text: localize('watermark.startDebugging', "Start Debugging"), id: 'workbench.action.debug.start', when: { web: ContextKeyExpr.equals('terminalProcessSupported', true) } };
+// const openSettings: WatermarkEntry = { text: localize('watermark.openSettings', "Open Settings"), id: 'workbench.action.openSettings' };
 
-const showChat = ContextKeyExpr.and(ContextKeyExpr.equals('chatSetupHidden', false), ContextKeyExpr.equals('chatSetupDisabled', false));
-const openChat: WatermarkEntry = { text: localize('watermark.openChat', "Open Chat"), id: 'workbench.action.chat.open', when: { native: showChat, web: showChat } };
+// const showChat = ContextKeyExpr.and(ContextKeyExpr.equals('chatSetupHidden', false), ContextKeyExpr.equals('chatSetupDisabled', false));
+// const openChat: WatermarkEntry = { text: localize('watermark.openChat', "Open Chat"), id: 'workbench.action.chat.open', when: { native: showChat, web: showChat } };
 
 const emptyWindowEntries: WatermarkEntry[] = coalesce([
-	showCommands,
-	...(isMacintosh && !isWeb ? [openFileOrFolder] : [openFile, openFolder]),
-	openRecent,
-	isMacintosh && !isWeb ? newUntitledFile : undefined, // fill in one more on macOS to get to 5 entries
-	openChat
+	// showCommands,
+	// ...(isMacintosh && !isWeb ? [openFileOrFolder] : [openFile, openFolder]),
+	// openRecent,
+	// isMacintosh && !isWeb ? newUntitledFile : undefined, // fill in one more on macOS to get to 5 entries
+	// openChat
 ]);
 
 const randomEmptyWindowEntries: WatermarkEntry[] = [
@@ -55,16 +62,16 @@ const randomEmptyWindowEntries: WatermarkEntry[] = [
 ];
 
 const workspaceEntries: WatermarkEntry[] = [
-	showCommands,
-	gotoFile,
-	openChat
+	// showCommands,
+	// gotoFile,
+	// openChat
 ];
 
 const randomWorkspaceEntries: WatermarkEntry[] = [
-	findInFiles,
-	startDebugging,
-	toggleTerminal,
-	openSettings,
+	// findInFiles,
+	// startDebugging,
+	// toggleTerminal,
+	// openSettings,
 ];
 
 export class EditorGroupWatermark extends Disposable {
@@ -92,11 +99,33 @@ export class EditorGroupWatermark extends Disposable {
 
 		this.cachedWhen = this.storageService.getObject(EditorGroupWatermark.CACHED_WHEN, StorageScope.PROFILE, Object.create(null));
 		this.workbenchState = this.contextService.getWorkbenchState();
-
 		const elements = h('.editor-group-watermark', [
 			h('.letterpress'),
 			h('.shortcuts@shortcuts'),
 		]);
+
+		// MEMBRANE: show aux bar toggle button (no longer needed)
+		// 1. IF the aux bar is not visible
+		// 2. AND there are not multiple open editor groups
+		//		    (when there are multiple open editor groups, there can be a watermark empty editor in some cases)
+		//		    (and in that^ case, the watermark has an x icon to close it)
+		//		    (and the other open editors will handle aux bar toggle button via the editor tab bar actions)
+		// See also: editorTabsControl.ts
+		// const hasMultipleEditorGroups = this.contextKeyService.contextMatchesRules(MultipleEditorGroupsContext);
+		// const isAuxBarVisible = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext);
+		// const toggleButton = $('.toggle-aux-bar', {
+		// 	title: 'Show Brane (AI) & Program Info',
+		// 	onclick: () => this.commandService.executeCommand('workbench.action.toggleAuxiliaryBar'),
+		// 	['data-hide']: isAuxBarVisible || hasMultipleEditorGroups,
+		// }, renderIcon(Codicon.chevronLeft));
+		// this._register(this.contextKeyService.onDidChangeContext(e => {
+		// 	if (e.affectsSome(new Set([AuxiliaryBarVisibleContext.key, MultipleEditorGroupsContext.key]))) {
+		// 		const isAuxBarVisible = this.contextKeyService.contextMatchesRules(AuxiliaryBarVisibleContext);
+		// 		const hasMultipleEditorGroups = this.contextKeyService.contextMatchesRules(MultipleEditorGroupsContext);
+		// 		toggleButton.setAttribute('data-hide', (isAuxBarVisible || hasMultipleEditorGroups).toString());
+		// 	}
+		// }));
+		// append(elements.root, toggleButton);
 
 		append(container, elements.root);
 		this.shortcuts = elements.shortcuts;

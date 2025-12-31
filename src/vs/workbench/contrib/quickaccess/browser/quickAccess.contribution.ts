@@ -14,7 +14,7 @@ import { KeyMod } from '../../../../base/common/keyCodes.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { inQuickPickContext, getQuickNavigateHandler } from '../../../browser/quickaccess.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { EditorContextKeys } from '../../../../editor/common/editorContextKeys.js';
+// import { EditorContextKeys } from '../../../../editor/common/editorContextKeys.js';
 
 //#region Quick Access Proviers
 
@@ -97,15 +97,16 @@ MenuRegistry.appendMenuItem(MenuId.GlobalActivity, {
 	order: 1
 });
 
-MenuRegistry.appendMenuItem(MenuId.EditorContext, {
-	group: 'z_commands',
-	when: EditorContextKeys.editorSimpleInput.toNegated(),
-	command: {
-		id: ShowAllCommandsAction.ID,
-		title: localize('commandPalette', "Command Palette..."),
-	},
-	order: 1
-});
+// MEMBRANE: Remove command palette from all menus
+// MenuRegistry.appendMenuItem(MenuId.EditorContext, {
+// 	group: 'z_commands',
+// 	when: EditorContextKeys.editorSimpleInput.toNegated(),
+// 	command: {
+// 		id: ShowAllCommandsAction.ID,
+// 		title: localize('commandPalette', "Command Palette..."),
+// 	},
+// 	order: 1
+// });
 
 //#endregion
 
@@ -113,7 +114,8 @@ MenuRegistry.appendMenuItem(MenuId.EditorContext, {
 //#region Workbench actions and commands
 
 registerAction2(ClearCommandHistoryAction);
-registerAction2(ShowAllCommandsAction);
+// MEMBRANE: Disable command palette
+// registerAction2(ShowAllCommandsAction);
 registerAction2(OpenViewPickerAction);
 registerAction2(QuickAccessViewPickerAction);
 
