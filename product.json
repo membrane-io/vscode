@@ -81,6 +81,38 @@
 				},
 				"publisherDisplayName": "Microsoft"
 			}
+		},
+		{
+			"name": "vscodevim.vim",
+			"version": "1.32.4",
+			"sha256": "773a1836e5ff0338ca352fa77273403f7861f1a0b220ac66d46e356d4f991f98",
+			"repo": "https://github.com/VSCodeVim/Vim",
+			"metadata": {
+				"id": "00000000-0000-0000-0000-000000000000",
+				"publisherId": {
+					"publisherId": "vscodevim",
+					"publisherName": "vscodevim",
+					"displayName": "VSCodeVim",
+					"flags": ""
+				},
+				"publisherDisplayName": "VSCodeVim"
+			}
+		},
+		{
+			"name": "esbenp.prettier-vscode",
+			"version": "11.0.2",
+			"sha256": "83d325ede81c5b16ec425d113ee2e281df94a8c42daa1b4047c109ce10f9007e",
+			"repo": "https://github.com/prettier/prettier-vscode",
+			"metadata": {
+				"id": "00000000-0000-0000-0000-000000000001",
+				"publisherId": {
+					"publisherId": "esbenp",
+					"publisherName": "esbenp",
+					"displayName": "Prettier",
+					"flags": ""
+				},
+				"publisherDisplayName": "Prettier"
+			}
 		}
 	],
 	"defaultChatAgent": {
