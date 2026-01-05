@@ -216,6 +216,8 @@ const compileWebExtensionsBuildTask = task.define('compile-web-extensions-build'
 	task.define('clean-web-extensions-build', util.rimraf('.build/web/extensions')),
 	task.define('bundle-web-extensions-build', () => extensions.packageAllLocalExtensionsStream(true, false).pipe(gulp.dest('.build/web'))),
 	task.define('bundle-marketplace-web-extensions-build', () => extensions.packageMarketplaceExtensionsStream(true).pipe(gulp.dest('.build/web'))),
+	// MEMBRANE: only include the minimum set of extensions
+	task.define('bundle-web-builtin-extensions-build', () => gulp.src(['extensions/esbenp.prettier-vscode/**', 'extensions/vscodevim.vim/**']).pipe(gulp.dest('.build/web/extensions'))),
 	task.define('bundle-web-extension-media-build', () => extensions.buildExtensionMedia(false, '.build/web/extensions')),
 ));
 gulp.task(compileWebExtensionsBuildTask);
