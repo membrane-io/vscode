@@ -368,6 +368,7 @@ const allowedExtensions = [
     'css-language-features',
     'diff',
     'emmet',
+    'esbenp.prettier-vscode',
     'handlebars',
     'html',
     'html-language-features',
@@ -395,6 +396,7 @@ const allowedExtensions = [
     'typescript',
     'typescript-basics',
     'typescript-language-features',
+    'vscodevim.vim',
     'xml',
     'yaml',
 ];
