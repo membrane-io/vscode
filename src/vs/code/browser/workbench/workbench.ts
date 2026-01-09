@@ -24,11 +24,11 @@ declare const window: Window & {
 	SENTRY_CAPTURE_EXCEPTION?: (error: Error) => void;
 	extensionToGazePort?: MessagePort;
 };
-import { CommandsRegistry } from 'vs/platform/commands/common/commands';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import type { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { mainWindow } from 'vs/base/browser/window';
+import { CommandsRegistry } from '../../../platform/commands/common/commands.js';
+import { IEditorService } from '../../../workbench/services/editor/common/editorService.js';
+import { isCodeEditor } from '../../../editor/browser/editorBrowser.js';
+import type { ServicesAccessor } from '../../../platform/instantiation/common/instantiation.js';
+import { mainWindow } from '../../../base/browser/window.js';
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 
@@ -157,9 +157,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 	// eslint-disable-next-line no-restricted-syntax
 	const domElement = window.vscodeTargetContainer || document.body;
-	create(domElement, config);
-})();
-	const domElement = (window as any).vscodeTargetContainer || mainWindow.document.body;
 	create(domElement, config);
 
 	// NOTE: Registering these commands here ...
