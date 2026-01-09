@@ -162,115 +162,111 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	const domElement = (window as any).vscodeTargetContainer || mainWindow.document.body;
 	create(domElement, config);
 
-	// Register Monaco commands for review decorations
-	// These allow the extension to add/remove view zones (e.g., showing removed lines during code review)
+	// NOTE: Registering these commands here ...
 	CommandsRegistry.registerCommand(
-		'membrane.addMonacoViewZone',
-		async (
-			accessor: ServicesAccessor,
-			args: {
-				uri: string;
-				afterLineNumber: number;
-				heightInPx: number;
-				lines: string[];
-			},
-		) => {
-			const editorService = accessor.get(IEditorService);
-			const targetUri = URI.parse(args.uri);
+  'membrane.setViewZones',
+  async (
+    accessor: ServicesAccessor,
+    args: {
+      uri: string;
+      zones: Array<{
+        afterLineNumber: number;
+        heightInPx: number;
+        lines: string[];
+      }>;
+    },
+  ) => {
+    const editorService = accessor.get(IEditorService);
+    const targetUri = URI.parse(args.uri);
 
-			const activeControl = editorService.activeTextEditorControl;
-			if (!activeControl || !isCodeEditor(activeControl)) {
-				return null;
-			}
+    const activeControl = editorService.activeTextEditorControl;
+    if (!activeControl || !isCodeEditor(activeControl)) {
+      return;
+    }
 
-			const model = activeControl.getModel();
-			if (!model) {
-				return null;
-			}
+    const model = activeControl.getModel();
+    if (!model) {
+      return;
+    }
 
-			// Verify we're in the correct file
-			const modelUri = model.uri;
-			if (
-				modelUri.scheme !== targetUri.scheme ||
-				modelUri.path !== targetUri.path
-			) {
-				return null;
-			}
+    const modelUri = model.uri;
+    if (
+      modelUri.scheme !== targetUri.scheme ||
+      modelUri.path !== targetUri.path
+    ) {
+      return;
+    }
 
-			let zoneId: string | null = null;
+    // Track zones per-editor (use a WeakMap or store on editor instance)
+    const existingZoneIds: string[] = (activeControl as any).__membraneViewZones || [];
 
-			activeControl.changeViewZones((accessor) => {
-				const container = document.createElement('div');
-				container.style.cssText = `
-					position: relative;
-					background: rgba(255, 0, 0, 0.15);
-					border-left: 1px solid rgba(255, 0, 0, 0.4);
-					font-family: var(--monaco-monospace-font, 'Menlo', 'Monaco', 'Courier New', monospace);
-					font-size: 12px;
-					line-height: 18px;
-					padding: 0;
-					color: rgba(255, 100, 100, 0.9);
-				`;
+    activeControl.changeViewZones((accessor) => {
+      // Remove ALL existing zones first
+      for (const zoneId of existingZoneIds) {
+        accessor.removeZone(zoneId);
+      }
 
-				args.lines.forEach((line: string, idx: number) => {
-					const lineDiv = document.createElement('div');
-					lineDiv.style.cssText = `
-						position: absolute;
-						top: ${idx * 18}px;
-						left: 0;
-						right: 0;
-						white-space: pre;
-						overflow: hidden;
-						text-overflow: ellipsis;
-					`;
+      // Add all new zones
+      const newZoneIds: string[] = [];
+      for (const zone of args.zones) {
+        const container = document.createElement('div');
+        container.style.cssText = `
+          position: relative;
+          background: rgba(255, 0, 0, 0.15);
+          border-left: 1px solid rgba(255, 0, 0, 0.4);
+          font-family: var(--monaco-monospace-font);
+          font-size: 12px;
+          line-height: 18px;
+          color: rgba(255, 100, 100, 0.9);
+        `;
 
-					lineDiv.textContent = line;
-					container.appendChild(lineDiv);
-				});
+        zone.lines.forEach((line, idx) => {
+          const lineDiv = document.createElement('div');
+          lineDiv.style.cssText = `
+            position: absolute;
+            top: ${idx * 18}px;
+            left: 0;
+            right: 0;
+            white-space: pre;
+            overflow: hidden;
+          `;
+          lineDiv.textContent = line;
+          container.appendChild(lineDiv);
+        });
 
-				zoneId = accessor.addZone({
-					afterLineNumber: args.afterLineNumber,
-					heightInPx: args.heightInPx,
-					domNode: container,
-					suppressMouseDown: false,
-				});
-			});
+        const zoneId = accessor.addZone({
+          afterLineNumber: zone.afterLineNumber,
+          heightInPx: zone.heightInPx,
+          domNode: container,
+          suppressMouseDown: false,
+        });
+        newZoneIds.push(zoneId);
+      }
 
-			return { zoneId };
-		},
-	);
-
+      // Store for next call
+      (activeControl as any).__membraneViewZones = newZoneIds;
+    });
+  },
+);
+	
 	CommandsRegistry.registerCommand(
-		'membrane.removeMonacoViewZone',
-		async (
-			accessor: ServicesAccessor,
-			args: { uri: string; zoneId: string },
-		) => {
-			const editorService = accessor.get(IEditorService);
-			const targetUri = URI.parse(args.uri);
+  'membrane.getEditorScrollInfo',
+  (accessor: ServicesAccessor) => {
+    const editorService = accessor.get(IEditorService);
+    const activeControl = editorService.activeTextEditorControl;
+    if (!activeControl || !isCodeEditor(activeControl)) {
+      return null;
+    }
+    const visibleRanges = activeControl.getVisibleRanges();
+    const firstVisibleLine = visibleRanges[0]?.startLineNumber ?? 1;
+    return {
+      scrollTop: activeControl.getScrollTop(),
+      firstLineTop: activeControl.getTopForLineNumber(firstVisibleLine),
+      firstVisibleLine: firstVisibleLine,
+    };
+  },
+);
 
-			const activeControl = editorService.activeTextEditorControl;
-			if (!activeControl || !isCodeEditor(activeControl)) {
-				return;
-			}
 
-			const model = activeControl.getModel();
-			if (!model) {
-				return;
-			}
 
-			// Verify we're in the correct file
-			const modelUri = model.uri;
-			if (
-				modelUri.scheme !== targetUri.scheme ||
-				modelUri.path !== targetUri.path
-			) {
-				return;
-			}
-
-			activeControl.changeViewZones((accessor) => {
-				accessor.removeZone(args.zoneId);
-			});
-		},
-	);
 })();
