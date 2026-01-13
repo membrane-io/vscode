@@ -159,7 +159,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	const domElement = window.vscodeTargetContainer || document.body;
 	create(domElement, config);
 
-	// NOTE: Registering these commands here ...
 	CommandsRegistry.registerCommand(
   'membrane.setViewZones',
   async (
@@ -170,6 +169,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
         afterLineNumber: number;
         heightInPx: number;
         lines: string[];
+        styled?: boolean;
       }>;
     },
   ) => {
@@ -206,7 +206,9 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
       // Add all new zones
       const newZoneIds: string[] = [];
       for (const zone of args.zones) {
-        const container = document.createElement('div');
+      const container = document.createElement('div');
+      
+      if (zone.styled) {
         container.style.cssText = `
           position: relative;
           background: rgba(255, 0, 0, 0.15);
@@ -230,6 +232,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
           lineDiv.textContent = line;
           container.appendChild(lineDiv);
         });
+      }
 
         const zoneId = accessor.addZone({
           afterLineNumber: zone.afterLineNumber,
@@ -260,6 +263,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
       scrollTop: activeControl.getScrollTop(),
       firstLineTop: activeControl.getTopForLineNumber(firstVisibleLine),
       firstVisibleLine: firstVisibleLine,
+      contentLeft: activeControl.getLayoutInfo().contentLeft,
     };
   },
 );
