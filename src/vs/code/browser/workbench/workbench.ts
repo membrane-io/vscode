@@ -1,3 +1,4 @@
+
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -23,6 +24,11 @@ declare const window: Window & {
 	SENTRY_CAPTURE_EXCEPTION?: (error: Error) => void;
 	extensionToGazePort?: MessagePort;
 };
+import { CommandsRegistry } from '../../../platform/commands/common/commands.js';
+import { IEditorService } from '../../../workbench/services/editor/common/editorService.js';
+import { isCodeEditor } from '../../../editor/browser/editorBrowser.js';
+import type { ServicesAccessor } from '../../../platform/instantiation/common/instantiation.js';
+import { mainWindow } from '../../../base/browser/window.js';
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 
@@ -45,7 +51,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		delete window.extensionToGazePort;
 	}
 
-
 	const isHttps = window.location.protocol === 'https:';
 	const isDev = window.location.hostname === 'localhost';
 	const extensionUrl = {
@@ -57,17 +62,15 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	config.additionalBuiltinExtensions = [URI.revive(extensionUrl)];
 
 	config.workspaceProvider = {
-		// IMPORTANT: this filename must match the filename used in `memfs.ts`.
-		// TODO: Somehow use product.json to configure that globally
 		workspace: { workspaceUri: URI.parse('memfs:/membrane.code-workspace') },
 		payload: {
-			'skipReleaseNotes': 'true',
-			'skipWelcome': 'true',
+			skipReleaseNotes: 'true',
+			skipWelcome: 'true',
 		},
 		trusted: true,
 		open: async (
 			_workspace: IWorkspace,
-			_options?: { reuse?: boolean; payload?: object }
+			_options?: { reuse?: boolean; payload?: object },
 		) => {
 			return true;
 		},
@@ -76,20 +79,17 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	config.secretStorageProvider = SecretStorageProvider.getInstance();
 
 	config.commands = [
-		// Used to refresh the page from the extension when a new version of the IDE is known to exist.
 		{ id: 'membrane.refreshPage', handler: () => window.location.reload() },
-		// Invoked when the navigator finishes loading
 		{
-			id: 'membrane.completeInitialization', handler: () => window.completeInitialization?.()
+			id: 'membrane.completeInitialization',
+			handler: () => window.completeInitialization?.(),
 		},
-		// For product tour, emit an event to advance to the next step
 		{
 			id: 'membrane.advanceTour', handler: (...args: unknown[]) => {
 				const cmdArgs = args[0] as { trigger: string };
 				window.dispatchEvent(new Event(`tour:${cmdArgs.trigger}`));
 			}
 		},
-		// For extension panels to bubble up errors
 		{
 			id: 'membrane.reportError',
 			handler: (...args: unknown[]) => {
@@ -106,7 +106,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 				window.SENTRY_REPORT_ISSUE?.({
 					source: cmdArgs.source,
 					message: cmdArgs.message,
-					context: cmdArgs.context
+					context: cmdArgs.context,
 				});
 			},
 		},
@@ -124,8 +124,9 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		{
 			id: 'membrane.getLaunchParams',
 			handler: () => {
-				// eslint-disable-next-line no-restricted-syntax
-				const meta = document.querySelector('meta[name="membrane-launch-params"]') as HTMLMetaElement;
+				const meta = mainWindow.document.querySelector(
+					'meta[name="membrane-launch-params"]',
+				) as HTMLMetaElement;
 				return meta?.content ?? '';
 			},
 		},
@@ -157,4 +158,116 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	// eslint-disable-next-line no-restricted-syntax
 	const domElement = window.vscodeTargetContainer || document.body;
 	create(domElement, config);
+
+	CommandsRegistry.registerCommand(
+  'membrane.setViewZones',
+  async (
+    accessor: ServicesAccessor,
+    args: {
+      uri: string;
+      zones: Array<{
+        afterLineNumber: number;
+        heightInPx: number;
+        lines: string[];
+        styled?: boolean;
+      }>;
+    },
+  ) => {
+    const editorService = accessor.get(IEditorService);
+    const targetUri = URI.parse(args.uri);
+
+    const activeControl = editorService.activeTextEditorControl;
+    if (!activeControl || !isCodeEditor(activeControl)) {
+      return;
+    }
+
+    const model = activeControl.getModel();
+    if (!model) {
+      return;
+    }
+
+    const modelUri = model.uri;
+    if (
+      modelUri.scheme !== targetUri.scheme ||
+      modelUri.path !== targetUri.path
+    ) {
+      return;
+    }
+
+    // Track zones per-editor (use a WeakMap or store on editor instance)
+    const existingZoneIds: string[] = (activeControl as any).__membraneViewZones || [];
+
+    activeControl.changeViewZones((accessor) => {
+      // Remove ALL existing zones first
+      for (const zoneId of existingZoneIds) {
+        accessor.removeZone(zoneId);
+      }
+
+      // Add all new zones
+      const newZoneIds: string[] = [];
+      for (const zone of args.zones) {
+      const container = document.createElement('div');
+      
+      if (zone.styled) {
+        container.style.cssText = `
+          position: relative;
+          background: rgba(255, 0, 0, 0.15);
+          border-left: 1px solid rgba(255, 0, 0, 0.4);
+          font-family: var(--monaco-monospace-font);
+          font-size: 12px;
+          line-height: 18px;
+          color: rgba(255, 100, 100, 0.9);
+        `;
+
+        zone.lines.forEach((line, idx) => {
+          const lineDiv = document.createElement('div');
+          lineDiv.style.cssText = `
+            position: absolute;
+            top: ${idx * 18}px;
+            left: 0;
+            right: 0;
+            white-space: pre;
+            overflow: hidden;
+          `;
+          lineDiv.textContent = line;
+          container.appendChild(lineDiv);
+        });
+      }
+
+        const zoneId = accessor.addZone({
+          afterLineNumber: zone.afterLineNumber,
+          heightInPx: zone.heightInPx,
+          domNode: container,
+          suppressMouseDown: false,
+        });
+        newZoneIds.push(zoneId);
+      }
+
+      // Store for next call
+      (activeControl as any).__membraneViewZones = newZoneIds;
+    });
+  },
+);
+	
+	CommandsRegistry.registerCommand(
+  'membrane.getEditorScrollInfo',
+  (accessor: ServicesAccessor) => {
+    const editorService = accessor.get(IEditorService);
+    const activeControl = editorService.activeTextEditorControl;
+    if (!activeControl || !isCodeEditor(activeControl)) {
+      return null;
+    }
+    const visibleRanges = activeControl.getVisibleRanges();
+    const firstVisibleLine = visibleRanges[0]?.startLineNumber ?? 1;
+    return {
+      scrollTop: activeControl.getScrollTop(),
+      firstLineTop: activeControl.getTopForLineNumber(firstVisibleLine),
+      firstVisibleLine: firstVisibleLine,
+      contentLeft: activeControl.getLayoutInfo().contentLeft,
+    };
+  },
+);
+
+
+
 })();
