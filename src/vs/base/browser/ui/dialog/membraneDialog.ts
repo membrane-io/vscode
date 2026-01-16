@@ -7,7 +7,7 @@ import { IDialogOptions, IDialogResult } from './dialog.js';
 import { Disposable } from '../../../common/lifecycle.js';
 import { generateUuid } from '../../../common/uuid.js';
 // import { mainWindow } from '../../../browser/window.js';
-import { MembranePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
+import { GazePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
 
 export interface MembraneDialogMessage {
 	type: 'confirm' | 'prompt' | 'info' | 'warn' | 'error' | 'input';
@@ -64,7 +64,7 @@ export class MembraneDialog extends Disposable {
 		this.dialogId = generateUuid();
 
 		// Register this instance as the dialog response handler
-		MembranePortManager.setDialogResponseHandler((response: unknown) => {
+		GazePortManager.setResponseHandler('membraneDialogResponse', (response: unknown) => {
 			this.handleDialogResponse(response as MembraneDialogResponse);
 		});
 	}
@@ -89,8 +89,9 @@ export class MembraneDialog extends Disposable {
 			};
 
 
-			// Send via MessagePort using shared port manager
-			MembranePortManager.sendMessage('membraneDialog', dialogMessage);
+			// Send via MessagePort using port manager
+			GazePortManager.sendMessage('membraneDialog', dialogMessage);
+
 
 			// Set up timeout to prevent hanging dialogs
 			setTimeout(() => {
@@ -149,7 +150,7 @@ export class MembraneDialog extends Disposable {
 
 		// Send update to Gaze if dialog is currently showing
 		if (MembraneDialog.pendingResponses.has(this.dialogId)) {
-			MembranePortManager.sendMessage('membraneDialogUpdate', {
+			GazePortManager.sendMessage('membraneDialogUpdate', {
 				id: this.dialogId,
 				message: message
 			});

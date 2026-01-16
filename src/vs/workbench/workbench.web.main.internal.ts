@@ -123,6 +123,12 @@ registerSingleton(ISharedWebContentExtractorService, NullSharedWebContentExtract
 
 //#region --- workbench contributions
 
+// MEMBRANE Editor Metrics
+import './contrib/membrane/browser/membraneEditorMetrics.contribution.js';
+
+// MEMBRANE Editor Decorations (view zones + highlights)
+import './contrib/membrane/browser/membraneEditorDecorations.contribution.js';
+
 // Logs
 import './contrib/logs/browser/logs.contribution.js';
 

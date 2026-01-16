@@ -13,7 +13,7 @@ import { NotificationsFilter, NotificationPriority, Severity } from '../../../..
 import { IntervalCounter } from '../../../../base/common/async.js';
 import { NotificationsToastsVisibleContext } from '../../../common/contextkeys.js';
 import { IContextKeyService, IContextKey } from '../../../../platform/contextkey/common/contextkey.js';
-import { MembranePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
+import { GazePortManager } from '../../../../base/browser/membrane/membranePortManager.js';
 
 declare global {
 	interface Window {
@@ -58,9 +58,9 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 		this.registerListeners();
 
 		// Initialize port manager to set up notification response listener
-		MembranePortManager.ensureInitialized();
+		GazePortManager.ensureInitialized();
 		// Register this instance as the notification response handler
-		MembranePortManager.setNotificationResponseHandler((response: unknown) => {
+		GazePortManager.setResponseHandler('membraneNotificationResponse', (response: unknown) => {
 			this.handleNotificationAction(response as MembraneNotificationActionResponse);
 		});
 	}
@@ -164,9 +164,8 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 		};
 
 		// Send notification via MembranePortManager
-
-		MembranePortManager.ensureInitialized();
-		MembranePortManager.sendMessage('membraneNotification', {
+		GazePortManager.ensureInitialized();
+		GazePortManager.sendMessage('membraneNotification', {
 			type: 'toast',
 			id: `notification-${notificationId}`,
 			notification: notificationData
@@ -199,7 +198,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 			this.activeNotifications.delete(item.id);
 
 			// Notify Gaze to hide the notification via MembranePortManager
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'hide',
 				id: `notification-${item.id}`
 			});
@@ -227,7 +226,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 	focus(): boolean {
 		// For keyboard navigation send focus request to Gaze via MembranePortManager
 		if (this.activeNotifications.size > 0) {
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'focus',
 				target: 'first'
 			});
@@ -238,7 +237,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	focusNext(): boolean {
 		if (this.activeNotifications.size > 0) {
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'focus',
 				target: 'next'
 			});
@@ -249,7 +248,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	focusPrevious(): boolean {
 		if (this.activeNotifications.size > 0) {
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'focus',
 				target: 'previous'
 			});
@@ -260,7 +259,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	focusFirst(): boolean {
 		if (this.activeNotifications.size > 0) {
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'focus',
 				target: 'first'
 			});
@@ -271,7 +270,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	focusLast(): boolean {
 		if (this.activeNotifications.size > 0) {
-			MembranePortManager.sendMessage('membraneNotification', {
+			GazePortManager.sendMessage('membraneNotification', {
 				type: 'focus',
 				target: 'last'
 			});
