@@ -7,7 +7,7 @@ import { IDialogOptions, IDialogResult } from './dialog.js';
 import { Disposable } from '../../../common/lifecycle.js';
 import { generateUuid } from '../../../common/uuid.js';
 // import { mainWindow } from '../../../browser/window.js';
-import { GazePortManager } from '../../../../base/browser/ui/dialog/membranePortManager.js';
+import { GazePortManager } from '../../membrane/membranePortManager.js';
 
 export interface MembraneDialogMessage {
 	type: 'confirm' | 'prompt' | 'info' | 'warn' | 'error' | 'input';
