@@ -3406,7 +3406,8 @@ class EditorMinimap extends BaseEditorOption<EditorOption.minimap, IEditorMinima
 
 	constructor() {
 		const defaults: EditorMinimapOptions = {
-			enabled: true,
+			// MEMBRANE
+			enabled: false,
 			size: 'proportional',
 			side: 'right',
 			showSlider: 'mouseover',

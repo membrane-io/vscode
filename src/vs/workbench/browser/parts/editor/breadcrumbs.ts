@@ -124,7 +124,8 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 		'breadcrumbs.enabled': {
 			description: localize('enabled', "Enable/disable navigation breadcrumbs."),
 			type: 'boolean',
-			default: true
+			// MEMBRANE
+			default: false
 		},
 		'breadcrumbs.filePath': {
 			description: localize('filepath', "Controls whether and how file paths are shown in the breadcrumbs view."),
