@@ -6,6 +6,7 @@
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { EditorOption } from '../../../../editor/common/config/editorOptions.js';
 import { isCodeEditor, ICodeEditor, IViewZoneChangeAccessor } from '../../../../editor/browser/editorBrowser.js';
 import { IModelDeltaDecoration, OverviewRulerLane } from '../../../../editor/common/model.js';
 import { Range } from '../../../../editor/common/core/range.js';
@@ -82,6 +83,7 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 			return;
 		}
 
+		const fontInfo = editor.getOption(EditorOption.fontInfo);
 		const editorWithDecorations = editor as IEditorWithMembraneDecorations;
 		const existingZoneIds: string[] = editorWithDecorations.__membraneViewZones || [];
 
@@ -96,7 +98,8 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 			for (const zone of zones) {
 				const zoneId = zoneAccessor.addZone({
 					afterLineNumber: zone.afterLine,
-					domNode: this._createViewZoneNode(zone),
+					heightInLines: zone.styled ? zone.lines.length : 1,
+					domNode: this._createViewZoneNode(zone, fontInfo),
 					suppressMouseDown: false,
 				});
 				newZoneIds.push(zoneId);
@@ -105,19 +108,19 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 		});
 	}
 
+
 	private _applyHighlights(editor: ICodeEditor, targetUri: URI, highlights: IMembraneHighlight[]): void {
 		const model = editor.getModel();
 		if (!model || model.uri.scheme !== targetUri.scheme || model.uri.path !== targetUri.path) {
 			return;
 		}
 
-		// Store decoration IDs on the model (persists across editor switches)
 		const modelWithDecorations = model as unknown as IModelWithMembraneDecorations;
 		const existingDecorationIds: string[] = modelWithDecorations.__membraneHighlights || [];
 
 		const lineCount = model.getLineCount();
 
-		// Use diff editor's inserted line background (already themed)
+
 		const newDecorations: IModelDeltaDecoration[] = highlights
 			.filter(h => h.startLine >= 1 && h.endLine <= lineCount && h.startLine <= h.endLine)
 			.map(h => ({
@@ -138,23 +141,32 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 	}
 
 
-	private _createViewZoneNode(zone: IMembraneViewZone): HTMLElement {
+	private _createViewZoneNode(zone: IMembraneViewZone, fontInfo: { fontFamily: string; fontSize: number; lineHeight: number }): HTMLElement {
 		const container = document.createElement('div');
+
+		console.log('[membrane] fontInfo:', fontInfo.fontFamily, fontInfo.fontSize, fontInfo.lineHeight);
+
 
 		if (zone.styled) {
 			// Styled view zone (e.g., deleted lines in diff)
 			container.style.cssText = `
-				position: relative;
-				background: rgba(255, 0, 0, 0.15);
-				border-left: 1px solid rgba(255, 0, 0, 0.4);
-				font-family: var(--monaco-monospace-font);
-				font-size: 12px;
-				line-height: 18px;
-				color: rgba(255, 100, 100, 0.9);
-			`;
-			zone.lines.forEach((line: string, idx: number) => {
+			background: rgba(255, 0, 0, 0.15);
+			border-left: 2px solid rgba(255, 0, 0, 0.6);
+			font-family: ${fontInfo.fontFamily};
+			font-size: ${fontInfo.fontSize}px;
+			line-height: ${fontInfo.lineHeight}px;
+			color: rgba(200, 100, 100, 0.9);
+		`;
+
+			zone.lines.forEach((line: string) => {
 				const lineDiv = document.createElement('div');
-				lineDiv.style.cssText = `position: absolute; top: ${idx * 18}px; left: 0; right: 0; white-space: pre; overflow: hidden;`;
+				lineDiv.style.cssText = `
+				white-space: pre;
+				overflow: hidden;
+				padding-left: 4px;
+				height: ${fontInfo.lineHeight}px;
+				line-height: ${fontInfo.lineHeight}px;
+			`;
 				lineDiv.textContent = line;
 				container.appendChild(lineDiv);
 			});
