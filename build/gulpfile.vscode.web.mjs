@@ -154,17 +154,17 @@ function packageTask(sourceFolderName, destinationFolderName) {
 
 	return () => {
 		const src = gulp.src(sourceFolderName + '/**', { base: '.' })
-			.pipe(rename(function (path) { path.dirname = path.dirname.replace(new RegExp('^' + sourceFolderName), 'out'); }))
+			.pipe(rename(function (filePath) { filePath.dirname = filePath.dirname.replace(new RegExp('^' + sourceFolderName), 'out'); }))
 			.pipe(filter(['**', '!**/*.map'], { dot: true }));
 
 		const srcMaps = gulp.src(sourceFolderName + '/**/*.map', { base: '.' })
-			.pipe(rename(function (path) { path.dirname = path.dirname.replace(new RegExp('^' + sourceFolderName), 'out/sourcemaps/core'); }));
+			.pipe(rename(function (filePath) { filePath.dirname = filePath.dirname.replace(new RegExp('^' + sourceFolderName), 'out/sourcemaps/core'); }));
 
 		const extensions = gulp.src('.build/web/extensions/**', { base: '.build/web', dot: true })
 			.pipe(filter(['**', '!**/*.map'], { dot: true }));
 
 		const extensionMaps = gulp.src('.build/web/extensions/**/*.map', { base: '.build/web', dot: true })
-			.pipe(rename(function (path) { path.dirname = path.join('out', 'sourcemaps', path.dirname); }));
+			.pipe(rename(function (filePath) { filePath.dirname = path.join('out', 'sourcemaps', filePath.dirname); }));
 
 		const loader = gulp.src('build/loader.min', { base: 'build', dot: true }).pipe(rename('out/vs/loader.js')); // TODO@esm remove line when we stop supporting web-amd-esm-bridge
 
