@@ -141,7 +141,7 @@ const bundleVSCodeWebTask = task.define('bundle-vscode-web', task.series(
 const minifyVSCodeWebTask = task.define('minify-vscode-web', task.series(
 	bundleVSCodeWebTask,
 	util.rimraf('out-vscode-web-min'),
-	optimize.minifyTask('out-vscode-web', `https://main.vscode-cdn.net/sourcemaps/${commit}/core`)
+	optimize.minifyTask('out-vscode-web', '/sourcemaps/core')
 ));
 gulp.task(minifyVSCodeWebTask);
 
@@ -154,14 +154,21 @@ function packageTask(sourceFolderName, destinationFolderName) {
 
 	return () => {
 		const src = gulp.src(sourceFolderName + '/**', { base: '.' })
-			.pipe(rename(function (path) { path.dirname = path.dirname.replace(new RegExp('^' + sourceFolderName), 'out'); }));
+			.pipe(rename(function (path) { path.dirname = path.dirname.replace(new RegExp('^' + sourceFolderName), 'out'); }))
+			.pipe(filter(['**', '!**/*.map'], { dot: true }));
 
-		const extensions = gulp.src('.build/web/extensions/**', { base: '.build/web', dot: true });
+		const srcMaps = gulp.src(sourceFolderName + '/**/*.map', { base: '.' })
+			.pipe(rename(function (path) { path.dirname = path.dirname.replace(new RegExp('^' + sourceFolderName), 'out/sourcemaps/core'); }));
+
+		const extensions = gulp.src('.build/web/extensions/**', { base: '.build/web', dot: true })
+			.pipe(filter(['**', '!**/*.map'], { dot: true }));
+
+		const extensionMaps = gulp.src('.build/web/extensions/**/*.map', { base: '.build/web', dot: true })
+			.pipe(rename(function (path) { path.dirname = path.join('out', 'sourcemaps', path.dirname); }));
 
 		const loader = gulp.src('build/loader.min', { base: 'build', dot: true }).pipe(rename('out/vs/loader.js')); // TODO@esm remove line when we stop supporting web-amd-esm-bridge
 
-		const sources = es.merge(src, extensions, loader)
-			.pipe(filter(['**', '!**/*.{js,css}.map'], { dot: true }))
+		const sources = es.merge(src, srcMaps, extensions, extensionMaps, loader)
 			// TODO@esm remove me once we stop supporting our web-esm-bridge
 			.pipe(es.through(function (file) {
 				if (file.relative === 'out/vs/workbench/workbench.web.main.internal.css') {

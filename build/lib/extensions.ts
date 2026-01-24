@@ -23,13 +23,11 @@ import * as jsoncParser from 'jsonc-parser';
 import webpack from 'webpack';
 import { getProductionDependencies } from './dependencies';
 import { IExtensionDefinition, getExtensionStream } from './builtInExtensions';
-import { getVersion } from './getVersion';
 import { fetchUrls, fetchGithub } from './fetch';
 const vzip = require('gulp-vinyl-zip');
 
 const root = path.dirname(path.dirname(__dirname));
-const commit = getVersion(root);
-const sourceMappingURLBase = `https://main.vscode-cdn.net/sourcemaps/${commit}`;
+const sourceMappingURLBase = '/sourcemaps';
 
 function minifyExtensionResources(input: Stream): Stream {
 	const jsonFilter = filter(['**/*.json', '**/*.code-snippets'], { restore: true });
