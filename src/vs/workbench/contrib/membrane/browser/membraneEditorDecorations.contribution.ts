@@ -144,9 +144,6 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 	private _createViewZoneNode(zone: IMembraneViewZone, fontInfo: { fontFamily: string; fontSize: number; lineHeight: number }): HTMLElement {
 		const container = document.createElement('div');
 
-		console.log('[membrane] fontInfo:', fontInfo.fontFamily, fontInfo.fontSize, fontInfo.lineHeight);
-
-
 		if (zone.styled) {
 			// Styled view zone (e.g., deleted lines in diff)
 			container.style.cssText = `
