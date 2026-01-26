@@ -68,13 +68,23 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 		const startLine = Math.max(1, firstVisibleLine - 20);
 		const endLine = Math.min(lineCount, lastVisibleLine + 20);
 
+		// Helper to check if a line is actually visible (not in a fold)
+		const isLineVisible = (line: number): boolean => {
+			return visibleRanges.some(range =>
+				line >= range.startLineNumber && line <= range.endLineNumber
+			);
+		};
+
 		const linePositions: Array<{ line: number; top: number; bottom: number }> = [];
 		for (let line = startLine; line <= endLine; line++) {
-			linePositions.push({
-				line,
-				top: editor.getTopForLineNumber(line, true),
-				bottom: editor.getBottomForLineNumber(line),
-			});
+			// Only include lines that are actually visible (not in folds)
+			if (isLineVisible(line)) {
+				linePositions.push({
+					line,
+					top: editor.getTopForLineNumber(line, true),
+					bottom: editor.getBottomForLineNumber(line),
+				});
+			}
 		}
 
 		return {
