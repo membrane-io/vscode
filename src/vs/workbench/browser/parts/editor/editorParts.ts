@@ -283,8 +283,9 @@ export class EditorParts extends MultiWindowParts<EditorPart, IEditorPartsMement
 			}
 		}
 
-		const mostRecentActivePart = this.mostRecentActiveParts.at(0);
-		mostRecentActivePart?.activeGroup.focus();
+		// MEMBRANE: don't steal the focus after loading
+		// const mostRecentActivePart = this.mostRecentActiveParts.at(0);
+		// mostRecentActivePart?.activeGroup.focus();
 
 		this._isReady = true;
 		this.whenReadyPromise.complete();
