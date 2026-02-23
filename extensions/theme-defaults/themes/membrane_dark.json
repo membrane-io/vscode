@@ -5,7 +5,9 @@
 	"colors": {
 		"sash.hoverBorder": "#808080",
 		"editorCodeLens.foreground": "#845bff",
-		"menu.selectionBackground": "#2a2a2a",     
+		"menu.selectionBackground": "#2a2a2a",
+		"menu.border": "#282828",
+		"menu.separatorBackground": "#282828"
 	},
 	"tokenColors": [
 		// BEGIN STYLE RESET: makes everything white (actual colors are below)

@@ -319,30 +319,49 @@ export class ContextView extends Disposable {
 		let left: number;
 
 		const activeWindow = DOM.getActiveWindow();
-		if (anchorAxisAlignment === AnchorAxisAlignment.VERTICAL) {
-			const verticalAnchor: ILayoutAnchor = { offset: around.top - activeWindow.pageYOffset, size: around.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
-			const horizontalAnchor: ILayoutAnchor = { offset: around.left, size: around.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
 
-			top = layout(activeWindow.innerHeight, viewSizeHeight, verticalAnchor) + activeWindow.pageYOffset;
+		// MEMBRANE: When the container is not document.body, use the container's
+		// bounds as the available viewport for layout.
+		let viewportHeight: number;
+		let viewportWidth: number;
+		let viewportOffsetTop = 0;
+		let viewportOffsetLeft = 0;
+
+		if (this.container && this.container !== this.container.ownerDocument.body) {
+			const containerRect = this.container.getBoundingClientRect();
+			viewportHeight = containerRect.height;
+			viewportWidth = containerRect.width;
+			viewportOffsetTop = containerRect.top;
+			viewportOffsetLeft = containerRect.left;
+		} else {
+			viewportHeight = activeWindow.innerHeight;
+			viewportWidth = activeWindow.innerWidth;
+		}
+
+		if (anchorAxisAlignment === AnchorAxisAlignment.VERTICAL) {
+			const verticalAnchor: ILayoutAnchor = { offset: around.top - activeWindow.pageYOffset - viewportOffsetTop, size: around.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
+			const horizontalAnchor: ILayoutAnchor = { offset: around.left - viewportOffsetLeft, size: around.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
+
+			top = layout(viewportHeight, viewSizeHeight, verticalAnchor) + viewportOffsetTop + activeWindow.pageYOffset;
 
 			// if view intersects vertically with anchor,  we must avoid the anchor
-			if (Range.intersects({ start: top, end: top + viewSizeHeight }, { start: verticalAnchor.offset, end: verticalAnchor.offset + verticalAnchor.size })) {
+			if (Range.intersects({ start: top, end: top + viewSizeHeight }, { start: verticalAnchor.offset + viewportOffsetTop, end: verticalAnchor.offset + viewportOffsetTop + verticalAnchor.size })) {
 				horizontalAnchor.mode = LayoutAnchorMode.AVOID;
 			}
 
-			left = layout(activeWindow.innerWidth, viewSizeWidth, horizontalAnchor);
+			left = layout(viewportWidth, viewSizeWidth, horizontalAnchor) + viewportOffsetLeft;
 		} else {
-			const horizontalAnchor: ILayoutAnchor = { offset: around.left, size: around.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
-			const verticalAnchor: ILayoutAnchor = { offset: around.top, size: around.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
+			const horizontalAnchor: ILayoutAnchor = { offset: around.left - viewportOffsetLeft, size: around.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
+			const verticalAnchor: ILayoutAnchor = { offset: around.top - viewportOffsetTop, size: around.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
 
-			left = layout(activeWindow.innerWidth, viewSizeWidth, horizontalAnchor);
+			left = layout(viewportWidth, viewSizeWidth, horizontalAnchor) + viewportOffsetLeft;
 
 			// if view intersects horizontally with anchor, we must avoid the anchor
-			if (Range.intersects({ start: left, end: left + viewSizeWidth }, { start: horizontalAnchor.offset, end: horizontalAnchor.offset + horizontalAnchor.size })) {
+			if (Range.intersects({ start: left, end: left + viewSizeWidth }, { start: horizontalAnchor.offset + viewportOffsetLeft, end: horizontalAnchor.offset + viewportOffsetLeft + horizontalAnchor.size })) {
 				verticalAnchor.mode = LayoutAnchorMode.AVOID;
 			}
 
-			top = layout(activeWindow.innerHeight, viewSizeHeight, verticalAnchor) + activeWindow.pageYOffset;
+			top = layout(viewportHeight, viewSizeHeight, verticalAnchor) + viewportOffsetTop + activeWindow.pageYOffset;
 		}
 
 		this.view.classList.remove('top', 'bottom', 'left', 'right');
