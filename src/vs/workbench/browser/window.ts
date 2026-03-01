@@ -303,6 +303,12 @@ export class BrowserWindow extends BaseWindow {
 					return true;
 				}
 
+				if (href.startsWith('https://membrane.io/?workspace=')) {
+					const workspaceId = href.substring('https://membrane.io/?workspace='.length);
+					mainWindow.location.href = `/?workspace=${workspaceId}`;
+					return true;
+				}
+
 				// HTTP(s): open in new window and deal with potential popup blockers
 				if (matchesScheme(href, Schemas.http) || matchesScheme(href, Schemas.https)) {
 					if (isSafari) {
