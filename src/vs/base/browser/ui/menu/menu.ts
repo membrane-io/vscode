@@ -328,7 +328,7 @@ export class Menu extends ActionBar {
 		scrollElement.style.outline = 'none';
 		scrollElement.style.color = fgColor;
 		scrollElement.style.backgroundColor = bgColor;
-		scrollElement.style.boxShadow = '0 0 0 1px #000';
+		scrollElement.style.boxShadow = '0 0 0 1px #050505';
 	}
 
 	override getContainer(): HTMLElement {
