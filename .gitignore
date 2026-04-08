@@ -1,3 +1,7 @@
+# These are downloaded as pre-built artifacts into .build/builtInExtensions/ and
+# symlinked here by ide/scripts/setup-dev.sh. Ignore so they don't pollute git status.
+extensions/esbenp.prettier-vscode
+extensions/vscodevim.vim
 .DS_Store
 .cache
 npm-debug.log
