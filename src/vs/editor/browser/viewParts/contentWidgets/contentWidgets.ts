@@ -313,7 +313,8 @@ class Widget {
 		const underLineTop = anchor.top + anchor.height;
 		const heightAvailableUnderLine = ctx.viewportHeight - underLineTop;
 
-		const aboveTop = aboveLineTop - height;
+		// MEMBRANE: Clamp aboveTop to 0 so hover never escapes above the editor viewport
+		const aboveTop = Math.max(0, aboveLineTop - height);
 		const fitsAbove = (heightAvailableAboveLine >= height);
 		const belowTop = underLineTop;
 		const fitsBelow = (heightAvailableUnderLine >= height);

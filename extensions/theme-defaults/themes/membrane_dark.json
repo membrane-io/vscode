@@ -4,6 +4,10 @@
 	"include": "./dark_modern.json",
 	"colors": {
 		"sash.hoverBorder": "#808080",
+		"editor.selectionBackground": "#ff800033",
+		"editor.hoverHighlightBackground": "#ff800033",
+		"editor.wordHighlightBackground": "#ff800033",
+		"editor.wordHighlightStrongBackground": "#ff800044",
 		"editorCodeLens.foreground": "#845bff",
 		"menu.selectionBackground": "#2a2a2a",
 		"menu.border": "#282828",

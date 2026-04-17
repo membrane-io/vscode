@@ -4,6 +4,10 @@
 	"include": "./light_modern.json",
 	"colors": {
 		"sash.hoverBorder": "#999",
+		"editor.selectionBackground": "#ff800033",
+		"editor.hoverHighlightBackground": "#ff800033",
+		"editor.wordHighlightBackground": "#ff800033",
+		"editor.wordHighlightStrongBackground": "#ff800044",
 		"diffEditor.unchangedRegionBackground": "#efefef",
 		"activityBar.activeBorder": "#3c3c3c",
 		"activityBar.background": "#ddd",
