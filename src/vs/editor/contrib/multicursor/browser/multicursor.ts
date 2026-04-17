@@ -767,11 +767,12 @@ export class SelectHighlightsAction extends MultiCursorSelectionControllerAction
 			id: 'editor.action.selectHighlights',
 			label: nls.localize2('selectAllOccurrencesOfFindMatch', "Select All Occurrences of Find Match"),
 			precondition: undefined,
-			kbOpts: {
-				kbExpr: EditorContextKeys.focus,
-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyL,
-				weight: KeybindingWeight.EditorContrib
-			},
+			// MEMBRANE: Disable Cmd+Shift+L keybinding
+			// kbOpts: {
+			// 	kbExpr: EditorContextKeys.focus,
+			// 	primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyL,
+			// 	weight: KeybindingWeight.EditorContrib
+			// },
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',

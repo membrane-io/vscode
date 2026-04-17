@@ -15,7 +15,8 @@ const BOTTOM_HEIGHT = 24;
 
 export abstract class ResizableContentWidget extends Disposable implements IContentWidget {
 
-	readonly allowEditorOverflow: boolean = true;
+	// MEMBRANE: Keep hover within editor bounds to prevent overflow outside the visible area
+	readonly allowEditorOverflow: boolean = false;
 	readonly suppressMouseDown: boolean = false;
 
 	protected readonly _resizableNode = this._register(new ResizableHTMLElement());
