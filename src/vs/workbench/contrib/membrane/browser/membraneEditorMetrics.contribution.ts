@@ -8,6 +8,7 @@ import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase 
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { isCodeEditor, ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { mainWindow } from '../../../../base/browser/window.js';
+import { EditorOption } from '../../../../editor/common/config/editorOptions.js';
 
 export class MembraneEditorMetricsContribution extends Disposable implements IWorkbenchContribution {
 
@@ -140,6 +141,8 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 			};
 		}
 
+		const fontInfo = editor.getOption(EditorOption.fontInfo);
+
 		return {
 			uri: model.uri.toString(),
 			scrollTop: editor.getScrollTop(),
@@ -149,6 +152,7 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 			lastVisibleLine,
 			contentLeft: layoutInfo.contentLeft,
 			contentWidth: layoutInfo.contentWidth,
+			charWidth: fontInfo.typicalHalfwidthCharacterWidth,
 			lineCount,
 			linePositions,
 			...(selectionData && { selection: selectionData }),
