@@ -10,6 +10,7 @@ import { isCodeEditor, ICodeEditor } from '../../../../editor/browser/editorBrow
 import { mainWindow } from '../../../../base/browser/window.js';
 import { EditorOption } from '../../../../editor/common/config/editorOptions.js';
 
+// Sends editor metrics to gaze so that it can render overlays attached to code constructs
 export class MembraneEditorMetricsContribution extends Disposable implements IWorkbenchContribution {
 
 	static readonly ID = 'workbench.contrib.membraneEditorMetrics';
