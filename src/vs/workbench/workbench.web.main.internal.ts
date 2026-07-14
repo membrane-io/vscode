@@ -75,7 +75,13 @@ import './services/browserElements/browser/webBrowserElementsService.js';
 import { InstantiationType, registerSingleton } from '../platform/instantiation/common/extensions.js';
 import { IAccessibilityService } from '../platform/accessibility/common/accessibility.js';
 import { IContextMenuService } from '../platform/contextview/browser/contextView.js';
-import { ContextMenuService } from '../platform/contextview/browser/contextMenuService.js';
+import { MembraneContextMenuService } from './contrib/membrane/browser/membraneContextMenuService.js';
+import { IHoverService } from '../platform/hover/browser/hover.js';
+import { MembraneHoverService } from './contrib/membrane/browser/membraneHoverService.js';
+import { IQuickInputService } from '../platform/quickinput/common/quickInput.js';
+import { MembraneQuickInputService } from './contrib/membrane/browser/membraneQuickInputService.js';
+import { IActionWidgetService } from '../platform/actionWidget/browser/actionWidget.js';
+import { MembraneActionWidgetService } from './contrib/membrane/browser/membraneActionWidgetService.js';
 import { IExtensionTipsService } from '../platform/extensionManagement/common/extensionManagement.js';
 import { ExtensionTipsService } from '../platform/extensionManagement/common/extensionTipsService.js';
 import { IWorkbenchExtensionManagementService } from './services/extensionManagement/common/extensionManagement.js';
@@ -101,7 +107,10 @@ import { IWebContentExtractorService, NullWebContentExtractorService, ISharedWeb
 
 registerSingleton(IWorkbenchExtensionManagementService, ExtensionManagementService, InstantiationType.Delayed);
 registerSingleton(IAccessibilityService, AccessibilityService, InstantiationType.Delayed);
-registerSingleton(IContextMenuService, ContextMenuService, InstantiationType.Delayed);
+registerSingleton(IContextMenuService, MembraneContextMenuService, InstantiationType.Delayed);
+registerSingleton(IHoverService, MembraneHoverService, InstantiationType.Delayed);
+registerSingleton(IQuickInputService, MembraneQuickInputService, InstantiationType.Delayed);
+registerSingleton(IActionWidgetService, MembraneActionWidgetService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncStoreService, UserDataSyncStoreService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncMachinesService, UserDataSyncMachinesService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncLocalStoreService, UserDataSyncLocalStoreService, InstantiationType.Delayed);

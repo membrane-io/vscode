@@ -49,6 +49,8 @@ export class HoverWidget extends Widget implements IHoverWidget {
 	private readonly _hoverContainer: HTMLElement;
 	private readonly _target: IHoverTarget;
 	private readonly _linkHandler: ((url: string) => void) | undefined;
+	// MEMBRANE: See constructor.
+	private readonly _options: IHoverOptions;
 
 	private _isDisposed: boolean = false;
 	private _hoverPosition: HoverPosition;
@@ -65,6 +67,21 @@ export class HoverWidget extends Widget implements IHoverWidget {
 	}
 	private get _targetDocumentElement(): HTMLElement {
 		return dom.getWindow(this._target.targetElements[0]).document.documentElement;
+	}
+
+	// MEMBRANE: The workbench container can be a small cutout inside a larger window
+	// (gaze owns the surrounding chrome), and the context view clamps the hover into
+	// that container after this widget picks a position. Measure horizontal room
+	// against the container so both layers agree; in a stock workbench the container
+	// spans the window, making this equivalent to upstream.
+	private get _horizontalViewport(): { left: number; right: number } {
+		const container = this._options.container;
+		if (container && container !== container.ownerDocument.body) {
+			const rect = container.getBoundingClientRect();
+			return { left: rect.left, right: rect.right };
+		}
+		const documentElement = this._targetDocumentElement;
+		return { left: documentElement.clientLeft, right: documentElement.clientWidth };
 	}
 
 	get isDisposed(): boolean { return this._isDisposed; }
@@ -103,6 +120,10 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		super();
 
 		this._linkHandler = options.linkHandler;
+
+		// MEMBRANE: Kept to read `options.container` at layout time (the hover service
+		// assigns it after construction).
+		this._options = options;
 
 		this._target = 'targetElements' in options.target ? options.target : new ElementHoverTarget(options.target);
 
@@ -433,15 +454,18 @@ export class HoverWidget extends Widget implements IHoverWidget {
 				this._x = target.left;
 			}
 
+			// MEMBRANE: Clamp against the container viewport instead of the window.
+			const viewport = this._horizontalViewport;
+
 			// Hover is going beyond window towards right end
-			if (this._x + hoverWidth >= this._targetDocumentElement.clientWidth) {
+			if (this._x + hoverWidth >= viewport.right) {
 				this._hover.containerDomNode.classList.add('right-aligned');
-				this._x = Math.max(this._targetDocumentElement.clientWidth - hoverWidth - Constants.HoverWindowEdgeMargin, this._targetDocumentElement.clientLeft);
+				this._x = Math.max(viewport.right - hoverWidth - Constants.HoverWindowEdgeMargin, viewport.left);
 			}
 		}
 
 		// Hover is going beyond window towards left end
-		if (this._x < this._targetDocumentElement.clientLeft) {
+		if (this._x < this._horizontalViewport.left) {
 			this._x = target.left + Constants.HoverWindowEdgeMargin;
 		}
 
@@ -482,23 +506,26 @@ export class HoverWidget extends Widget implements IHoverWidget {
 
 		const hoverPointerOffset = (this._hoverPointer ? Constants.PointerSize : 0);
 
+		// MEMBRANE: Measure room against the container viewport instead of the window.
+		const viewport = this._horizontalViewport;
+
 		// When force position is enabled, restrict max width
 		if (this._forcePosition) {
 			const padding = hoverPointerOffset + Constants.HoverBorderWidth;
 			if (this._hoverPosition === HoverPosition.RIGHT) {
-				this._hover.containerDomNode.style.maxWidth = `${this._targetDocumentElement.clientWidth - target.right - padding}px`;
+				this._hover.containerDomNode.style.maxWidth = `${viewport.right - target.right - padding}px`;
 			} else if (this._hoverPosition === HoverPosition.LEFT) {
-				this._hover.containerDomNode.style.maxWidth = `${target.left - padding}px`;
+				this._hover.containerDomNode.style.maxWidth = `${target.left - viewport.left - padding}px`;
 			}
 			return;
 		}
 
 		// Position hover on right to target
 		if (this._hoverPosition === HoverPosition.RIGHT) {
-			const roomOnRight = this._targetDocumentElement.clientWidth - target.right;
+			const roomOnRight = viewport.right - target.right;
 			// Hover on the right is going beyond window.
 			if (roomOnRight < this._hover.containerDomNode.clientWidth + hoverPointerOffset) {
-				const roomOnLeft = target.left;
+				const roomOnLeft = target.left - viewport.left;
 				// There's enough room on the left, flip the hover position
 				if (roomOnLeft >= this._hover.containerDomNode.clientWidth + hoverPointerOffset) {
 					this._hoverPosition = HoverPosition.LEFT;
@@ -512,10 +539,10 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		// Position hover on left to target
 		else if (this._hoverPosition === HoverPosition.LEFT) {
 
-			const roomOnLeft = target.left;
+			const roomOnLeft = target.left - viewport.left;
 			// Hover on the left is going beyond window.
 			if (roomOnLeft < this._hover.containerDomNode.clientWidth + hoverPointerOffset) {
-				const roomOnRight = this._targetDocumentElement.clientWidth - target.right;
+				const roomOnRight = viewport.right - target.right;
 				// There's enough room on the right, flip the hover position
 				if (roomOnRight >= this._hover.containerDomNode.clientWidth + hoverPointerOffset) {
 					this._hoverPosition = HoverPosition.RIGHT;
@@ -526,7 +553,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 				}
 			}
 			// Hover on the left is going beyond window.
-			if (target.left - this._hover.containerDomNode.clientWidth - hoverPointerOffset <= this._targetDocumentElement.clientLeft) {
+			if (target.left - this._hover.containerDomNode.clientWidth - hoverPointerOffset <= viewport.left) {
 				this._hoverPosition = HoverPosition.RIGHT;
 			}
 		}

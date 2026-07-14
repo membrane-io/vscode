@@ -84,7 +84,7 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 			if (isLineVisible(line)) {
 				linePositions.push({
 					line,
-					top: editor.getTopForLineNumber(line, true),
+					top: editor.getTopForLineNumber(line),
 					bottom: editor.getBottomForLineNumber(line),
 				});
 			}
@@ -149,7 +149,7 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 			scrollTop: editor.getScrollTop(),
 			scrollLeft: editor.getScrollLeft(),
 			firstVisibleLine,
-			firstLineTop: editor.getTopForLineNumber(firstVisibleLine, true),
+			firstLineTop: editor.getTopForLineNumber(firstVisibleLine),
 			lastVisibleLine,
 			contentLeft: layoutInfo.contentLeft,
 			contentWidth: layoutInfo.contentWidth,

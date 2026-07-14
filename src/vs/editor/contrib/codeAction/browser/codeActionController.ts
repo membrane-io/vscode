@@ -97,6 +97,11 @@ export class CodeActionController extends Disposable implements IEditorContribut
 		this._resolver = instantiationService.createInstance(CodeActionKeybindingResolver);
 
 		this._register(this._editor.onDidLayoutChange(() => this._actionWidgetService.hide()));
+		this._register(this._editor.onMouseDown(() => {
+			if (this._actionWidgetService.isVisible) {
+				this._actionWidgetService.hide(true);
+			}
+		}));
 	}
 
 	override dispose() {

@@ -13,19 +13,7 @@ import { NotificationsFilter, NotificationPriority, Severity } from '../../../..
 import { IntervalCounter } from '../../../../base/common/async.js';
 import { NotificationsToastsVisibleContext } from '../../../common/contextkeys.js';
 import { IContextKeyService, IContextKey } from '../../../../platform/contextkey/common/contextkey.js';
-import { GazePortManager } from '../../../../base/browser/membrane/membranePortManager.js';
-
-declare global {
-	interface Window {
-		membraneNotificationActionHandler?: (response: MembraneNotificationActionResponse) => void;
-	}
-}
-
-interface MembraneNotificationActionResponse {
-	notificationId: string;
-	actionId?: string;
-	dismissed?: boolean;
-}
+import { MembraneVscodeUiSessions, ToastPayload } from '../../../../base/browser/membrane/membraneVscodeUi.js';
 
 export class MembraneNotificationsToasts extends Disposable implements INotificationsToastController {
 
@@ -56,25 +44,14 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 		super();
 		this.notificationsToastsVisibleContextKey = NotificationsToastsVisibleContext.bindTo(contextKeyService);
 		this.registerListeners();
-
-		// Initialize port manager to set up notification response listener
-		GazePortManager.ensureInitialized();
-		// Register this instance as the notification response handler
-		GazePortManager.setResponseHandler('membraneNotificationResponse', (response: unknown) => {
-			this.handleNotificationAction(response as MembraneNotificationActionResponse);
-		});
 	}
 
 	private registerListeners(): void {
 		this.lifecycleService.when(LifecyclePhase.Restored).then(() => {
-			// Show toast for initial notifications if any
 			this.model.notifications.forEach(notification => this.addToast(notification));
-
-			// Update toasts on notification changes
 			this.disposables.add(this.model.onDidChangeNotification(e => this.onDidChangeNotification(e)));
 		});
 
-		// Filter handling
 		this.disposables.add(this.model.onDidChangeFilter(({ global, sources }) => {
 			if (global === NotificationsFilter.ERROR) {
 				this.hide();
@@ -99,48 +76,39 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	private addToast(item: INotificationViewItem): void {
 		if (this.isNotificationsCenterVisible) {
-			return; // do not show toasts while notification center is visible
+			return;
 		}
 
 		if (item.priority === NotificationPriority.SILENT) {
-			return; // do not show toasts for silenced notifications
+			return;
 		}
 
-		// Filter out unwanted notifications
 		if (this.shouldFilterNotification(item)) {
 			return;
 		}
 
-		// Spam protection - same as original
 		if (this.addedToastsIntervalCounter.increment() > MembraneNotificationsToasts.SPAM_PROTECTION.limit) {
 			return;
 		}
 
-		// Generate a unique ID if none exists and store it on the item
 		if (!item.id) {
 			(item as { id?: string }).id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 		}
 
-		// At this point we know item.id exists
 		const notificationId = item.id!;
 
-		// Forward notification to Gaze instead of creating DOM toast
 		this.forwardNotificationToGaze(item);
 
-		// Track the notification using the guaranteed ID
 		this.activeNotifications.set(notificationId, item);
 
-		// Update visibility state
 		if (!this._isVisible) {
 			this._isVisible = true;
 			this.notificationsToastsVisibleContextKey.set(true);
 			this._onDidChangeVisibility.fire();
 		}
 
-		// Mark as visible in the item
 		item.updateVisibility(true);
 
-		// Handle item close event
 		Event.once(item.onDidClose)(() => {
 			this.removeToast(item);
 		});
@@ -149,8 +117,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 	private forwardNotificationToGaze(item: INotificationViewItem): void {
 		const notificationId = item.id!;
 
-		const notificationData = {
-			id: notificationId,
+		const payload: ToastPayload = {
 			severity: this.severityToString(item.severity),
 			message: item.message.raw,
 			source: item.source,
@@ -163,16 +130,27 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 			})) || []
 		};
 
-		// Send notification via MembranePortManager
-		GazePortManager.ensureInitialized();
-		GazePortManager.sendMessage('membraneNotification', {
-			type: 'toast',
-			id: `notification-${notificationId}`,
-			notification: notificationData
+		MembraneVscodeUiSessions.register(notificationId, 'toast', {
+			onSelect: (actionId) => {
+				const action = item.actions?.primary?.find(a => a.id === actionId);
+				action?.run();
+				// Gaze keeps rendering the toast until we hide it; running an action closes it.
+				item.close();
+			},
+			onDismiss: () => {
+				item.close();
+			},
+		});
+
+		MembraneVscodeUiSessions.send({
+			id: notificationId,
+			lifecycle: 'show',
+			kind: 'toast',
+			payload,
 		});
 	}
 
-	private severityToString(severity: Severity): string {
+	private severityToString(severity: Severity): ToastPayload['severity'] {
 		switch (severity) {
 			case Severity.Info: return 'info';
 			case Severity.Warning: return 'warning';
@@ -183,107 +161,58 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 
 	private shouldFilterNotification(item: INotificationViewItem): boolean {
 		const message = item.message.raw.toLowerCase();
-
-		// Filter out extension activation notifications
 		if (message.includes('activating extension')) {
 			return true;
 		}
-
 		return false;
 	}
 
 	private removeToast(item: INotificationViewItem): void {
-		// Remove from tracking
 		if (item.id) {
 			this.activeNotifications.delete(item.id);
-
-			// Notify Gaze to hide the notification via MembranePortManager
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'hide',
-				id: `notification-${item.id}`
-			});
+			MembraneVscodeUiSessions.unregister(item.id);
 		}
 
-		// Update visibility if no more notifications
 		if (this.activeNotifications.size === 0) {
 			this._isVisible = false;
 			this.notificationsToastsVisibleContextKey.set(false);
 			this._onDidChangeVisibility.fire();
 		}
 
-		// Mark as not visible in the item
 		item.updateVisibility(false);
 	}
 
-	// Required interface methods
 	hide(): void {
-		// Hide all active notifications
 		for (const [, item] of this.activeNotifications) {
 			this.removeToast(item);
 		}
 	}
 
+	// Gaze toasts have no keyboard focus support; returning false lets callers
+	// fall back (e.g. to the notifications center).
 	focus(): boolean {
-		// For keyboard navigation send focus request to Gaze via MembranePortManager
-		if (this.activeNotifications.size > 0) {
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'focus',
-				target: 'first'
-			});
-			return true;
-		}
 		return false;
 	}
 
 	focusNext(): boolean {
-		if (this.activeNotifications.size > 0) {
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'focus',
-				target: 'next'
-			});
-			return true;
-		}
 		return false;
 	}
 
 	focusPrevious(): boolean {
-		if (this.activeNotifications.size > 0) {
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'focus',
-				target: 'previous'
-			});
-			return true;
-		}
 		return false;
 	}
 
 	focusFirst(): boolean {
-		if (this.activeNotifications.size > 0) {
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'focus',
-				target: 'first'
-			});
-			return true;
-		}
 		return false;
 	}
 
 	focusLast(): boolean {
-		if (this.activeNotifications.size > 0) {
-			GazePortManager.sendMessage('membraneNotification', {
-				type: 'focus',
-				target: 'last'
-			});
-			return true;
-		}
 		return false;
 	}
 
 	update(isCenterVisible: boolean): void {
 		if (this.isNotificationsCenterVisible !== isCenterVisible) {
 			this.isNotificationsCenterVisible = isCenterVisible;
-
-			// Hide all toasts when the notification center gets visible
 			if (this.isNotificationsCenterVisible) {
 				this.hide();
 			}
@@ -291,35 +220,7 @@ export class MembraneNotificationsToasts extends Disposable implements INotifica
 	}
 
 	layout(_dimension: Dimension | undefined): void {
-		// No-op for Membrane - Gaze handles its own layout
-	}
-
-	private handleNotificationAction(response: MembraneNotificationActionResponse): void {
-		if (!response || !response.notificationId) {
-			return;
-		}
-
-		const notificationId = response.notificationId;
-		const actionId = response.actionId;
-		const dismissed = response.dismissed;
-
-		// Find the notification by ID
-		for (const [, item] of this.activeNotifications) {
-			if (item.id === notificationId) {
-				if (dismissed) {
-					// User dismissed the notification
-					item.close();
-				} else if (actionId && item.actions?.primary) {
-					// User clicked an action
-					const action = item.actions.primary.find(a => a.id === actionId);
-					if (action) {
-						// Execute the action
-						action.run();
-					}
-				}
-				break;
-			}
-		}
+		// no-op
 	}
 
 	override dispose(): void {
