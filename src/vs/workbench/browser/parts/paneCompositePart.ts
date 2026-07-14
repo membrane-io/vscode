@@ -532,6 +532,14 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			} finally {
 				this.blockOpening = undefined;
 			}
+
+			// MEMBRANE: The layout force-hides some parts (sidebar, panel, auxiliary bar). If the
+			// part refused to show, don't open the composite: it would render into an invisible
+			// part and steal keyboard focus into UI the user can't see.
+			if (!this.layoutService.isVisible(this.partId)) {
+				blockOpening.complete(undefined);
+				return undefined;
+			}
 		}
 
 		try {
