@@ -6,53 +6,16 @@
 import { IDialogOptions, IDialogResult } from './dialog.js';
 import { Disposable } from '../../../common/lifecycle.js';
 import { generateUuid } from '../../../common/uuid.js';
-// import { mainWindow } from '../../../browser/window.js';
-import { GazePortManager } from '../../membrane/membranePortManager.js';
-
-export interface MembraneDialogMessage {
-	type: 'confirm' | 'prompt' | 'info' | 'warn' | 'error' | 'input';
-	id: string;
-	message: string;
-	detail?: string;
-	buttons: string[];
-	checkboxLabel?: string;
-	checkboxChecked?: boolean;
-	inputs?: Array<{
-		placeholder?: string;
-		type?: 'text' | 'password';
-		value?: string;
-	}>;
-	cancelId?: number;
-	iconType?: 'none' | 'info' | 'error' | 'question' | 'warning' | 'pending';
-}
-
-export interface MembraneDialogResponse {
-	id: string;
-	button: number;
-	checkboxChecked?: boolean;
-	values?: string[];
-}
+import { MembraneVscodeUiSessions, ModalPayload } from '../../membrane/membraneVscodeUi.js';
 
 export class MembraneDialog extends Disposable {
-	private static pendingResponses = new Map<string, {
+	private static pendingDialogs = new Map<string, {
 		resolve: (result: IDialogResult) => void;
 		reject: (error: Error) => void;
+		cancelId: number;
 	}>();
 
 	private readonly dialogId: string;
-
-	// Handle dialog responses from Gaze
-	private handleDialogResponse(response: MembraneDialogResponse): void {
-		const pending = MembraneDialog.pendingResponses.get(response.id);
-		if (pending) {
-			MembraneDialog.pendingResponses.delete(response.id);
-			pending.resolve({
-				button: response.button,
-				checkboxChecked: response.checkboxChecked,
-				values: response.values
-			});
-		}
-	}
 
 	constructor(
 		_container: HTMLElement,
@@ -62,22 +25,18 @@ export class MembraneDialog extends Disposable {
 	) {
 		super();
 		this.dialogId = generateUuid();
-
-		// Register this instance as the dialog response handler
-		GazePortManager.setResponseHandler('membraneDialogResponse', (response: unknown) => {
-			this.handleDialogResponse(response as MembraneDialogResponse);
-		});
 	}
 
 	async show(): Promise<IDialogResult> {
 		return new Promise<IDialogResult>((resolve, reject) => {
-			// Store the promise resolvers
-			MembraneDialog.pendingResponses.set(this.dialogId, { resolve, reject });
+			MembraneDialog.pendingDialogs.set(this.dialogId, {
+				resolve,
+				reject,
+				cancelId: this.options.cancelId ?? 0,
+			});
 
-			// Prepare the message to send to the client
-			const dialogMessage: MembraneDialogMessage = {
-				type: this.inferDialogType(),
-				id: this.dialogId,
+			const payload: ModalPayload = {
+				dialogType: this.inferDialogType(),
 				message: this.message,
 				detail: this.options.detail,
 				buttons: this.getButtonLabels(),
@@ -85,31 +44,30 @@ export class MembraneDialog extends Disposable {
 				checkboxChecked: this.options.checkboxChecked,
 				inputs: this.options.inputs,
 				cancelId: this.options.cancelId,
-				iconType: this.options.type
+				iconType: this.options.type,
 			};
 
+			MembraneVscodeUiSessions.register(this.dialogId, 'modal', {
+				resolveDialog: (result) => {
+					MembraneDialog.pendingDialogs.delete(this.dialogId);
+					resolve(result);
+				},
+				rejectDialog: (error) => {
+					MembraneDialog.pendingDialogs.delete(this.dialogId);
+					reject(error);
+				},
+			});
 
-			// Send via MessagePort using port manager
-			GazePortManager.sendMessage('membraneDialog', dialogMessage);
-
-
-			// Set up timeout to prevent hanging dialogs
-			setTimeout(() => {
-				const pending = MembraneDialog.pendingResponses.get(this.dialogId);
-				if (pending) {
-					MembraneDialog.pendingResponses.delete(this.dialogId);
-					// Default to cancel/close behavior
-					pending.resolve({
-						button: this.options.cancelId || 0,
-						checkboxChecked: this.options.checkboxChecked
-					});
-				}
-			}, 30000); // 30 second timeout
+			MembraneVscodeUiSessions.send({
+				id: this.dialogId,
+				lifecycle: 'show',
+				kind: 'modal',
+				payload,
+			});
 		});
 	}
 
-	private inferDialogType(): MembraneDialogMessage['type'] {
-		// Try to infer dialog type from options or button text
+	private inferDialogType(): ModalPayload['dialogType'] {
 		if (this.options.inputs && this.options.inputs.length > 0) {
 			return 'input';
 		}
@@ -148,18 +106,26 @@ export class MembraneDialog extends Disposable {
 	updateMessage(message: string): void {
 		this.message = message;
 
-		// Send update to Gaze if dialog is currently showing
-		if (MembraneDialog.pendingResponses.has(this.dialogId)) {
-			GazePortManager.sendMessage('membraneDialogUpdate', {
+		if (MembraneDialog.pendingDialogs.has(this.dialogId)) {
+			MembraneVscodeUiSessions.send({
 				id: this.dialogId,
-				message: message
+				lifecycle: 'update',
+				kind: 'modal',
+				payload: { dialogType: this.inferDialogType(), message, buttons: this.getButtonLabels() },
 			});
 		}
 	}
 
 	override dispose(): void {
 		super.dispose();
-		// Clean up any pending dialog
-		MembraneDialog.pendingResponses.delete(this.dialogId);
+		// Settle the promise before tearing down: without a timeout (removed on
+		// purpose), a dialog disposed while still showing would otherwise leave
+		// its `show()` awaiter hanging forever. Resolve as the cancel button.
+		const pending = MembraneDialog.pendingDialogs.get(this.dialogId);
+		if (pending) {
+			MembraneDialog.pendingDialogs.delete(this.dialogId);
+			pending.resolve({ button: pending.cancelId });
+		}
+		MembraneVscodeUiSessions.unregister(this.dialogId);
 	}
 }

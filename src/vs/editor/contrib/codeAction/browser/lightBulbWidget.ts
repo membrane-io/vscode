@@ -5,23 +5,22 @@
 
 import * as dom from '../../../../base/browser/dom.js';
 import { Gesture } from '../../../../base/browser/touch.js';
+import { LightbulbIcon, MembraneLightBulb } from '../../../../base/browser/membrane/membraneLightBulb.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { ThemeIcon } from '../../../../base/common/themables.js';
 import './lightBulbWidget.css';
 import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition, IEditorMouseEvent } from '../../../browser/editorBrowser.js';
+import { EditorAnchor, ScreenAnchor } from '../../../../base/browser/membrane/membraneVscodeUi.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { IPosition } from '../../../common/core/position.js';
-import { GlyphMarginLane, IModelDecorationsChangeAccessor, TrackedRangeStickiness } from '../../../common/model.js';
-import { ModelDecorationOptions } from '../../../common/model/textModel.js';
+import { IModelDecorationsChangeAccessor } from '../../../common/model.js';
 import { computeIndentLevel } from '../../../common/model/utils.js';
 import { autoFixCommandId, quickFixCommandId } from './codeAction.js';
 import { CodeActionSet, CodeActionTrigger } from '../common/types.js';
 import * as nls from '../../../../nls.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
-import { Range } from '../../../common/core/range.js';
 
 const GUTTER_LIGHTBULB_ICON = registerIcon('gutter-lightbulb', Codicon.lightBulb, nls.localize('gutterLightbulbWidget', 'Icon which spawns code actions menu from the gutter when there is no space in the editor.'));
 const GUTTER_LIGHTBULB_AUTO_FIX_ICON = registerIcon('gutter-lightbulb-auto-fix', Codicon.lightbulbAutofix, nls.localize('gutterLightbulbAutoFixWidget', 'Icon which spawns code actions menu from the gutter when there is no space in the editor and a quick fix is available.'));
@@ -55,13 +54,6 @@ namespace LightBulbState {
 export class LightBulbWidget extends Disposable implements IContentWidget {
 	private _gutterDecorationID: string | undefined;
 
-	private static readonly GUTTER_DECORATION = ModelDecorationOptions.register({
-		description: 'codicon-gutter-lightbulb-decoration',
-		glyphMarginClassName: ThemeIcon.asClassName(Codicon.lightBulb),
-		glyphMargin: { position: GlyphMarginLane.Left },
-		stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-	});
-
 	public static readonly ID = 'editor.contrib.lightbulbWidget';
 
 	private static readonly _posPref = [ContentWidgetPositionPreference.EXACT];
@@ -86,8 +78,6 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 	private _preferredKbLabel?: string;
 	private _quickFixKbLabel?: string;
 
-	private gutterDecoration: ModelDecorationOptions = LightBulbWidget.GUTTER_DECORATION;
-
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService
@@ -96,9 +86,13 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 
 		this._domNode = dom.$('div.lightBulbWidget');
 		this._domNode.role = 'listbox';
+		this._hideNativeDom();
 		this._register(Gesture.ignoreTarget(this._domNode));
 
 		this._editor.addContentWidget(this);
+
+		this._register(this._editor.onDidScrollChange(() => this._syncMembraneLightBulb()));
+		this._register(this._editor.onDidLayoutChange(() => this._syncMembraneLightBulb()));
 
 		this._register(this._editor.onDidChangeModelContent(_ => {
 			// cancel when the line in question has been removed
@@ -204,7 +198,15 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 	}
 
 	getPosition(): IContentWidgetPosition | null {
-		return this._state.type === LightBulbState.Type.Showing ? this._state.widgetPosition : null;
+		// Membrane renders the lightbulb in gaze.
+		return null;
+	}
+
+	private _hideNativeDom(): void {
+		this._domNode.style.display = 'none';
+		this._domNode.style.visibility = 'hidden';
+		this._domNode.style.opacity = '0';
+		this._domNode.style.pointerEvents = 'none';
 	}
 
 	public update(actions: CodeActionSet, trigger: CodeActionTrigger, atPosition: IPosition) {
@@ -323,11 +325,17 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 		const validActions = actions.validActions;
 		const actionKind = actions.validActions[0].action.kind;
 		if (validActions.length !== 1 || !actionKind) {
-			this._editor.layoutContentWidget(this);
+			this._layoutForMembrane();
 			return;
 		}
 
+		this._layoutForMembrane();
+	}
+
+	private _layoutForMembrane(): void {
+		this._hideNativeDom();
 		this._editor.layoutContentWidget(this);
+		this._syncMembraneLightBulb();
 	}
 
 	public hide(): void {
@@ -336,7 +344,7 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 		}
 
 		this.state = LightBulbState.Hidden;
-		this._editor.layoutContentWidget(this);
+		this._layoutForMembrane();
 	}
 
 	public gutterHide(): void {
@@ -349,6 +357,127 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 		}
 
 		this.gutterState = LightBulbState.Hidden;
+		this._editor.layoutContentWidget(this);
+		this._syncMembraneLightBulb();
+	}
+
+	private _syncMembraneLightBulb(): void {
+		const active = this.state.type === LightBulbState.Type.Showing
+			? { state: this.state, gutter: false }
+			: this.gutterState.type === LightBulbState.Type.Showing
+				? { state: this.gutterState, gutter: true }
+				: undefined;
+
+		if (!active) {
+			MembraneLightBulb.hide();
+			return;
+		}
+
+		const position = active.state.widgetPosition.position;
+		if (!position) {
+			MembraneLightBulb.hide();
+			return;
+		}
+
+		const anchor = this._getMembraneAnchor(position, active.gutter);
+		const icon = this._getMembraneIcon(active.state.actions);
+		const title = this.title ?? '';
+
+		MembraneLightBulb.show(anchor, { icon, title, gutter: active.gutter }, () => {
+			this._editor.focus();
+			const menuAnchor = this._getLightbulbMenuAnchor(active);
+			this._onClick.fire({
+				x: menuAnchor.x,
+				y: menuAnchor.y,
+				actions: active.state.actions,
+				trigger: active.state.trigger,
+			});
+		});
+	}
+
+	private _getLightbulbMenuAnchor(active: { state: LightBulbState.Showing; gutter: boolean }): { x: number; y: number } {
+		const position = active.state.widgetPosition.position;
+		if (!position) {
+			return { x: 0, y: 0 };
+		}
+
+		const coords = this._editor.getScrolledVisiblePosition(position);
+		if (!coords) {
+			return { x: 0, y: 0 };
+		}
+
+		const domNode = this._editor.getDomNode();
+		if (!domNode) {
+			return { x: 0, y: 0 };
+		}
+
+		const editorCoords = dom.getDomNodePagePosition(domNode);
+		const layout = this._editor.getLayoutInfo();
+		const lineHeight = this._editor.getOption(EditorOption.lineHeight);
+		const iconSize = 16;
+
+		const top = editorCoords.top + coords.top + (lineHeight - iconSize) / 2;
+		const left = active.gutter
+			? editorCoords.left + layout.glyphMarginLeft + (layout.lineNumbersWidth - iconSize) / 2
+			: editorCoords.left + layout.contentLeft;
+
+		let pad = Math.floor(lineHeight / 3);
+		if (position.lineNumber < active.state.editorPosition.lineNumber) {
+			pad += lineHeight;
+		}
+
+		return {
+			x: left,
+			y: top + iconSize + pad,
+		};
+	}
+
+	private _getMembraneAnchor(position: IPosition, gutter: boolean): EditorAnchor | ScreenAnchor {
+		const model = this._editor.getModel();
+		if (!gutter && model) {
+			return {
+				type: 'editor',
+				uri: model.uri.toString(),
+				line: position.lineNumber,
+				column: position.column,
+			};
+		}
+
+		const coords = this._editor.getScrolledVisiblePosition(position);
+		if (!coords) {
+			return { type: 'screen', x: 0, y: 0, width: 16, height: 16 };
+		}
+		const domNode = this._editor.getDomNode();
+		if (!domNode) {
+			return { type: 'screen', x: 0, y: 0, width: 16, height: 16 };
+		}
+		const editorCoords = dom.getDomNodePagePosition(domNode);
+		const layout = this._editor.getLayoutInfo();
+		const lineHeight = this._editor.getOption(EditorOption.lineHeight);
+		const iconSize = 16;
+		const y = editorCoords.top + coords.top + (lineHeight - iconSize) / 2;
+		const x = editorCoords.left + layout.glyphMarginLeft + (layout.lineNumbersWidth - iconSize) / 2;
+
+		return {
+			type: 'screen',
+			x,
+			y,
+			width: iconSize,
+			height: iconSize,
+		};
+	}
+
+	private _getMembraneIcon(actions: CodeActionSet): LightbulbIcon {
+		if (actions.allAIFixes) {
+			return 'sparkleFilled';
+		}
+		if (actions.hasAutoFix) {
+			return actions.hasAIFix ? 'sparkle' : 'autofix';
+		}
+		if (actions.hasAIFix) {
+			return 'sparkle';
+		}
+		return 'lightbulb';
 	}
 
 	private get state(): LightBulbState.State { return this._state; }
@@ -369,96 +498,44 @@ export class LightBulbWidget extends Disposable implements IContentWidget {
 		this._domNode.classList.remove(...this._iconClasses);
 		this._iconClasses = [];
 		if (this.state.type !== LightBulbState.Type.Showing) {
+			this._hideNativeDom();
 			return;
 		}
-		let icon: ThemeIcon;
 		let autoRun = false;
 		if (this.state.actions.allAIFixes) {
-			icon = Codicon.sparkleFilled;
 			if (this.state.actions.validActions.length === 1) {
 				autoRun = true;
 			}
 		} else if (this.state.actions.hasAutoFix) {
-			if (this.state.actions.hasAIFix) {
-				icon = Codicon.lightbulbSparkleAutofix;
-			} else {
-				icon = Codicon.lightbulbAutofix;
-			}
+			// icon handled by membrane
 		} else if (this.state.actions.hasAIFix) {
-			icon = Codicon.lightbulbSparkle;
-		} else {
-			icon = Codicon.lightBulb;
+			// icon handled by membrane
 		}
 		this._updateLightbulbTitle(this.state.actions.hasAutoFix, autoRun);
-		this._iconClasses = ThemeIcon.asClassNameArray(icon);
-		this._domNode.classList.add(...this._iconClasses);
+		this._hideNativeDom();
 	}
 
 	private _updateGutterLightBulbTitleAndIcon(): void {
 		if (this.gutterState.type !== LightBulbState.Type.Showing) {
 			return;
 		}
-		let icon: ThemeIcon;
-		let autoRun = false;
-		if (this.gutterState.actions.allAIFixes) {
-			icon = GUTTER_SPARKLE_FILLED_ICON;
-			if (this.gutterState.actions.validActions.length === 1) {
-				autoRun = true;
-			}
-		} else if (this.gutterState.actions.hasAutoFix) {
-			if (this.gutterState.actions.hasAIFix) {
-				icon = GUTTER_LIGHTBULB_AIFIX_AUTO_FIX_ICON;
-			} else {
-				icon = GUTTER_LIGHTBULB_AUTO_FIX_ICON;
-			}
-		} else if (this.gutterState.actions.hasAIFix) {
-			icon = GUTTER_LIGHTBULB_AIFIX_ICON;
-		} else {
-			icon = GUTTER_LIGHTBULB_ICON;
-		}
+		// The gaze lightbulb renders the icon; only the title matters here.
+		const autoRun = this.gutterState.actions.allAIFixes && this.gutterState.actions.validActions.length === 1;
 		this._updateLightbulbTitle(this.gutterState.actions.hasAutoFix, autoRun);
-
-		const GUTTER_DECORATION = ModelDecorationOptions.register({
-			description: 'codicon-gutter-lightbulb-decoration',
-			glyphMarginClassName: ThemeIcon.asClassName(icon),
-			glyphMargin: { position: GlyphMarginLane.Left },
-			stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-		});
-
-		this.gutterDecoration = GUTTER_DECORATION;
 	}
 
 	/* Gutter Helper Functions */
 	private renderGutterLightbub(): void {
-		const selection = this._editor.getSelection();
-		if (!selection) {
-			return;
+		if (this._gutterDecorationID !== undefined) {
+			this._removeGutterDecoration(this._gutterDecorationID);
 		}
-
-		if (this._gutterDecorationID === undefined) {
-			this._addGutterDecoration(selection.startLineNumber);
-		} else {
-			this._updateGutterDecoration(this._gutterDecorationID, selection.startLineNumber);
-		}
-	}
-
-	private _addGutterDecoration(lineNumber: number) {
-		this._editor.changeDecorations((accessor: IModelDecorationsChangeAccessor) => {
-			this._gutterDecorationID = accessor.addDecoration(new Range(lineNumber, 0, lineNumber, 0), this.gutterDecoration);
-		});
+		this._layoutForMembrane();
 	}
 
 	private _removeGutterDecoration(decorationId: string) {
 		this._editor.changeDecorations((accessor: IModelDecorationsChangeAccessor) => {
 			accessor.removeDecoration(decorationId);
 			this._gutterDecorationID = undefined;
-		});
-	}
-
-	private _updateGutterDecoration(decorationId: string, lineNumber: number) {
-		this._editor.changeDecorations((accessor: IModelDecorationsChangeAccessor) => {
-			accessor.changeDecoration(decorationId, new Range(lineNumber, 0, lineNumber, 0));
-			accessor.changeDecorationOptions(decorationId, this.gutterDecoration);
 		});
 	}
 

@@ -400,6 +400,8 @@ registerAction2(class ReplaceInFilesAction extends Action2 {
 			keybinding: [{
 				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyH,
 				weight: KeybindingWeight.WorkbenchContrib,
+				// MEMBRANE: The search sidebar is force-hidden, so never trigger this from the keyboard.
+				when: ContextKeyExpr.regex('neverMatch', /doesNotMatch/),
 			}],
 			category,
 			f1: true,

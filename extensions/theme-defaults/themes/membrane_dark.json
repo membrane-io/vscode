@@ -11,7 +11,38 @@
 		"editorCodeLens.foreground": "#845bff",
 		"menu.selectionBackground": "#2a2a2a",
 		"menu.border": "#282828",
-		"menu.separatorBackground": "#282828"
+		"menu.separatorBackground": "#282828",
+		"editorWidget.background": "#1b1b1b",
+		"editorWidget.border": "#282828",
+		"editorSuggestWidget.background": "#1b1b1b",
+		"editorSuggestWidget.border": "#282828",
+		"editorSuggestWidget.foreground": "#ececec",
+		"editorSuggestWidget.selectedBackground": "#2a2a2a",
+		"editorSuggestWidget.selectedForeground": "#ececec",
+		"editorSuggestWidget.highlightForeground": "#f89216",
+		"editorSuggestWidget.focusHighlightForeground": "#f89216",
+		"editorSuggestWidgetStatus.foreground": "#8a8a8a",
+		// Native find/replace widget (Cmd+F), kept native like the suggest widget
+		// and styled to match the gaze chrome.
+		"editorWidget.foreground": "#ececec",
+		"editorWidget.resizeBorder": "#282828",
+		"widget.border": "#282828",
+		"input.background": "#141414",
+		"input.foreground": "#ececec",
+		"input.border": "#3a3a3a",
+		"input.placeholderForeground": "#8a8a8a",
+		"inputOption.activeBackground": "#f8921633",
+		"inputOption.activeBorder": "#f89216aa",
+		"inputOption.activeForeground": "#ececec",
+		"inputOption.hoverBackground": "#2a2a2a",
+		"toolbar.hoverBackground": "#2a2a2a",
+		"icon.foreground": "#ececec",
+		"focusBorder": "#666666",
+		// Native hover tooltips (find widget) and the parameter hints widget.
+		"editorHoverWidget.background": "#1b1b1b",
+		"editorHoverWidget.border": "#282828",
+		"editorHoverWidget.foreground": "#ececec",
+		"editorHoverWidget.statusBarBackground": "#141414"
 	},
 	"tokenColors": [
 		// BEGIN STYLE RESET: makes everything white (actual colors are below)

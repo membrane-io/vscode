@@ -2205,8 +2205,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	setPartHidden(hidden: boolean, part: Parts, targetWindow: Window = mainWindow): void {
 		// MEMBRANE: Force certain parts to always stay hidden
 		const MEMBRANE_FORCE_HIDDEN_PARTS = [
-			// Parts.ACTIVITYBAR_PART,
-			// Parts.SIDEBAR_PART,
+			Parts.ACTIVITYBAR_PART,
+			Parts.SIDEBAR_PART,
 			Parts.AUXILIARYBAR_PART,
 			Parts.PANEL_PART,
 			Parts.STATUSBAR_PART,

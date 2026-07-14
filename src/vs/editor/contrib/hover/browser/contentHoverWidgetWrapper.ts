@@ -5,10 +5,11 @@
 
 import * as dom from '../../../../base/browser/dom.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
-import { Disposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
-import { ICodeEditor, IEditorMouseEvent, MouseTargetType } from '../../../browser/editorBrowser.js';
+import { Disposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { ICodeEditor, IEditorMouseEvent, MouseTargetType, ContentWidgetPositionPreference } from '../../../browser/editorBrowser.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { Range } from '../../../common/core/range.js';
+import { Position } from '../../../common/core/position.js';
 import { TokenizationRegistry } from '../../../common/languages.js';
 import { HoverOperation, HoverResult, HoverStartMode, HoverStartSource } from './hoverOperation.js';
 import { HoverAnchor, HoverParticipantRegistry, HoverRangeAnchor, IEditorHoverContext, IEditorHoverParticipant, IHoverPart, IHoverWidget } from './hoverTypes.js';
@@ -23,6 +24,7 @@ import { RenderedContentHover } from './contentHoverRendered.js';
 import { isMousePositionWithinElement } from './hoverUtils.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
+import { bridgeContentHover, hideBridgedContentHover, isBridgedContentHoverVisible, isBridgedMouseGettingCloser, setBridgedContentHoverDismissHandler } from './membraneContentHoverBridge.js';
 
 export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidget {
 
@@ -91,6 +93,8 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 		this._register(this._contentHoverWidget.onContentsChanged(() => {
 			this._onContentsChanged.fire();
 		}));
+		setBridgedContentHoverDismissHandler(() => this.hide());
+		this._register(toDisposable(() => setBridgedContentHoverDismissHandler(undefined)));
 	}
 
 	/**
@@ -103,7 +107,7 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 		focus: boolean,
 		mouseEvent: IEditorMouseEvent | null
 	): boolean {
-		const contentHoverIsVisible = this._contentHoverWidget.position && this._currentResult;
+		const contentHoverIsVisible = this._isContentHoverVisible();
 		if (!contentHoverIsVisible) {
 			if (anchor) {
 				this._startHoverOperationIfNecessary(anchor, mode, source, focus, false);
@@ -112,7 +116,10 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 			return false;
 		}
 		const isHoverSticky = this._editor.getOption(EditorOption.hover).sticky;
-		const isMouseGettingCloser = mouseEvent && this._contentHoverWidget.isMouseGettingCloser(mouseEvent.event.posx, mouseEvent.event.posy);
+		const isMouseGettingCloser = mouseEvent && (
+			this._contentHoverWidget.isMouseGettingCloser(mouseEvent.event.posx, mouseEvent.event.posy)
+			|| isBridgedMouseGettingCloser(mouseEvent.event.posx, mouseEvent.event.posy)
+		);
 		const isHoverStickyAndIsMouseGettingCloser = isHoverSticky && isMouseGettingCloser;
 		// The mouse is getting closer to the hover, so we will keep the hover untouched
 		// But we will kick off a hover update at the new anchor, insisting on keeping the hover visible.
@@ -133,7 +140,10 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 			return true;
 		}
 		// If mouse if not getting closer and anchor is defined, and the new anchor is not compatible with the previous anchor
-		const currentAnchorCompatibleWithPreviousAnchor = this._currentResult && anchor.canAdoptVisibleHover(this._currentResult.options.anchor, this._contentHoverWidget.position);
+		const showAtPosition = this._contentHoverWidget.position
+			?? (this._currentResult ? new Position(this._currentResult.options.anchor.range.startLineNumber, 1) : undefined);
+		const currentAnchorCompatibleWithPreviousAnchor = this._currentResult && showAtPosition
+			&& anchor.canAdoptVisibleHover(this._currentResult.options.anchor, showAtPosition);
 		if (!currentAnchorCompatibleWithPreviousAnchor) {
 			this._setCurrentResult(null);
 			this._startHoverOperationIfNecessary(anchor, mode, source, focus, false);
@@ -196,7 +206,7 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 	}
 
 	private _withResult(hoverResult: ContentHoverResult): void {
-		const previousHoverIsVisibleWithCompleteResult = this._contentHoverWidget.position && this._currentResult && this._currentResult.isComplete;
+		const previousHoverIsVisibleWithCompleteResult = (this._contentHoverWidget.position || isBridgedContentHoverVisible()) && this._currentResult && this._currentResult.isComplete;
 		if (!previousHoverIsVisibleWithCompleteResult) {
 			this._setCurrentResult(hoverResult);
 		}
@@ -219,6 +229,13 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 	private _showHover(hoverResult: ContentHoverResult): void {
 		const context = this._getHoverContext();
 		this._renderedContentHover.value = new RenderedContentHover(this._editor, hoverResult, this._participants, context, this._keybindingService, this._hoverService, this._clipboardService);
+		// MEMBRANE: Bridge markdown/marker hovers to gaze; fall back to native DOM for other part types.
+		// ABOVE is a hint matching the native default; gaze flips below when there isn't enough room.
+		const preference = ContentWidgetPositionPreference.ABOVE;
+		if (bridgeContentHover(this._editor, hoverResult, preference)) {
+			this._renderedContentHover.clear();
+			return;
+		}
 		if (this._renderedContentHover.value.domNodeHasChildren) {
 			this._contentHoverWidget.show(this._renderedContentHover.value);
 		} else {
@@ -227,6 +244,8 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 	}
 
 	private _hideHover(): void {
+		// MEMBRANE: Hide gaze-bridged hover when VS Code hides the content hover.
+		hideBridgedContentHover();
 		this._contentHoverWidget.hide();
 		this._participants.forEach(participant => participant.handleHide?.());
 	}
@@ -402,7 +421,11 @@ export class ContentHoverWidgetWrapper extends Disposable implements IHoverWidge
 	}
 
 	public get isVisible(): boolean {
-		return this._contentHoverWidget.isVisible;
+		return this._contentHoverWidget.isVisible || isBridgedContentHoverVisible();
+	}
+
+	private _isContentHoverVisible(): boolean {
+		return !!(this._contentHoverWidget.position && this._currentResult) || isBridgedContentHoverVisible();
 	}
 
 	public get isFocused(): boolean {

@@ -40,6 +40,12 @@ export interface IActionWidgetService {
 
 	hide(didCancel?: boolean): void;
 
+	focusPrevious(): void;
+
+	focusNext(): void;
+
+	acceptSelected(preview?: boolean): void;
+
 	readonly isVisible: boolean;
 }
 
@@ -201,10 +207,7 @@ registerAction2(class extends Action2 {
 	}
 
 	run(accessor: ServicesAccessor): void {
-		const widgetService = accessor.get(IActionWidgetService);
-		if (widgetService instanceof ActionWidgetService) {
-			widgetService.focusPrevious();
-		}
+		accessor.get(IActionWidgetService).focusPrevious();
 	}
 });
 
@@ -224,10 +227,7 @@ registerAction2(class extends Action2 {
 	}
 
 	run(accessor: ServicesAccessor): void {
-		const widgetService = accessor.get(IActionWidgetService);
-		if (widgetService instanceof ActionWidgetService) {
-			widgetService.focusNext();
-		}
+		accessor.get(IActionWidgetService).focusNext();
 	}
 });
 
@@ -246,10 +246,7 @@ registerAction2(class extends Action2 {
 	}
 
 	run(accessor: ServicesAccessor): void {
-		const widgetService = accessor.get(IActionWidgetService);
-		if (widgetService instanceof ActionWidgetService) {
-			widgetService.acceptSelected();
-		}
+		accessor.get(IActionWidgetService).acceptSelected();
 	}
 });
 
@@ -267,9 +264,6 @@ registerAction2(class extends Action2 {
 	}
 
 	run(accessor: ServicesAccessor): void {
-		const widgetService = accessor.get(IActionWidgetService);
-		if (widgetService instanceof ActionWidgetService) {
-			widgetService.acceptSelected(true);
-		}
+		accessor.get(IActionWidgetService).acceptSelected(true);
 	}
 });

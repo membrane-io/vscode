@@ -259,6 +259,8 @@ registerAction2(class FindInFilesAction extends Action2 {
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyF,
+				// MEMBRANE: The search sidebar is force-hidden, so never trigger this from the keyboard.
+				when: ContextKeyExpr.regex('neverMatch', /doesNotMatch/),
 			},
 			menu: [{
 				id: MenuId.MenubarEditMenu,
