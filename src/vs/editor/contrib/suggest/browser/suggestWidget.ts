@@ -99,6 +99,13 @@ class PersistedWidgetSize {
 	}
 }
 
+// MEMBRANE: The suggest widget stays native (not bridged to gaze) on purpose.
+// It's latency-critical (re-filters every keystroke), fully keyboard-driven,
+// and deeply entangled with the editor (snippets, inline completions, cursor-
+// relative positioning). It also lives entirely inside the editor pane, so it
+// doesn't conflict with gaze owning the floating chrome. It's restyled to match
+// the gaze menus via the editorSuggestWidget.* tokens in the membrane_dark /
+// membrane_light theme files (extensions/theme-defaults/themes/).
 export class SuggestWidget implements IDisposable {
 
 	private static LOADING_MESSAGE: string = nls.localize('suggestWidget.loading', "Loading...");

@@ -118,6 +118,13 @@ function stopPropagationForMultiLineDownwards(event: IKeyboardEvent, value: stri
 	}
 }
 
+// MEMBRANE: The find/replace widget stays native (not bridged to gaze) on purpose,
+// like the suggest widget. It re-filters on every keystroke, is fully keyboard-driven,
+// and is deeply entangled with the editor (match decorations, scroll-to-match, the
+// replace flow). It lives entirely inside the editor pane, so it doesn't conflict with
+// gaze owning the floating chrome. It's restyled to match the gaze look via the
+// editorWidget.* / input.* / inputOption.* / toolbar.* tokens in the membrane_dark /
+// membrane_light theme files (extensions/theme-defaults/themes/).
 export class FindWidget extends Widget implements IOverlayWidget, IVerticalSashLayoutProvider {
 	private static readonly ID = 'editor.contrib.findWidget';
 	private readonly _codeEditor: ICodeEditor;
