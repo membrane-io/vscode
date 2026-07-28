@@ -10,6 +10,10 @@
 		"editor.wordHighlightStrongBackground": "#ff800044",
 		"editorCodeLens.foreground": "#845bff",
 		"menu.selectionBackground": "#2a2a2a",
+		// Vertical indent guides: barely above the editor background (#1F1F1F).
+		// activeBackground1 is left unset so the active guide keeps its
+		// inherited color (#707070 from dark_vs.json).
+		"editorIndentGuide.background1": "#2c2c2c",
 		"menu.border": "#282828",
 		"menu.separatorBackground": "#282828",
 		"editorWidget.background": "#1b1b1b",
