@@ -150,6 +150,8 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 	config.configurationDefaults = {
 		...config.configurationDefaults,
 		'window.commandCenter': false, // Hide command center
+		'editor.scrollbar.verticalScrollbarSize': 6,
+		'editor.scrollbar.horizontalScrollbarSize': 6,
 	};
 
 
