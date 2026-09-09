@@ -154,10 +154,21 @@ export class MembraneEditorMetricsContribution extends Disposable implements IWo
 			contentLeft: layoutInfo.contentLeft,
 			contentWidth: layoutInfo.contentWidth,
 			charWidth: fontInfo.typicalHalfwidthCharacterWidth,
+			editorTop: this._editorTopInWorkbench(editor),
 			lineCount,
 			linePositions,
 			...(selectionData && { selection: selectionData }),
 		};
+	}
+
+	/** Monaco widget top relative to the workbench hole Gaze sizes (tabs/breadcrumbs sit above it). */
+	private _editorTopInWorkbench(editor: ICodeEditor): number {
+		const editorDom = editor.getDomNode();
+		if (!editorDom) {
+			return 0;
+		}
+		const workbench = editorDom.closest('.monaco-workbench') ?? editorDom;
+		return editorDom.getBoundingClientRect().top - workbench.getBoundingClientRect().top;
 	}
 }
 
