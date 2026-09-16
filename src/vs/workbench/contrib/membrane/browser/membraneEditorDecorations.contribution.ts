@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from '../../../../base/common/lifecycle.js';
+import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
 import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
-import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { EditorOption } from '../../../../editor/common/config/editorOptions.js';
-import { isCodeEditor, ICodeEditor, IViewZoneChangeAccessor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditor, IViewZoneChangeAccessor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { IModelDeltaDecoration, OverviewRulerLane } from '../../../../editor/common/model.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { mainWindow } from '../../../../base/browser/window.js';
@@ -29,36 +29,73 @@ interface IFileDecorations {
 	highlights: IMembraneHighlight[];
 }
 
-// View zones are editor-specific (can't persist across editor instances)
-interface IEditorWithMembraneDecorations extends ICodeEditor {
-	__membraneViewZones?: string[];
-}
-
 // Highlights are model-specific (persist when switching tabs)
 interface IModelWithMembraneDecorations {
 	__membraneHighlights?: string[];
+}
+
+const EMPTY_DECORATIONS: IFileDecorations = { viewZones: [], highlights: [] };
+
+/** The key that both a file URI from Gaze and an editor model URI map to. */
+function fileKey(uri: URI): string {
+	return `${uri.scheme}:${uri.path}`;
 }
 
 export class MembraneEditorDecorationsContribution extends Disposable implements IWorkbenchContribution {
 
 	static readonly ID = 'workbench.contrib.membraneEditorDecorations';
 
+	/**
+	 * The decorations that Gaze sent for each file.
+	 *
+	 * Gaze sends a file one time, when the decorations of that file change, so this contribution
+	 * holds them: an editor that opens the file later, or opens it again, needs them then.
+	 */
+	private readonly _decorations = new Map<string, IFileDecorations>();
+
+	/** The view zones that this contribution added to each editor. */
+	private readonly _zoneIds = new Map<ICodeEditor, string[]>();
+
+	private readonly _modelListeners = new Map<ICodeEditor, IDisposable>();
+
 	constructor(
-		@IEditorService private readonly editorService: IEditorService,
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
 		super();
 		this._setupFileDecorationsListener();
+
+		for (const editor of this.codeEditorService.listCodeEditors()) {
+			this._trackEditor(editor);
+		}
+		this._register(this.codeEditorService.onCodeEditorAdd(editor => this._trackEditor(editor)));
+		this._register(this.codeEditorService.onCodeEditorRemove(editor => this._untrackEditor(editor)));
 	}
 
+	override dispose(): void {
+		for (const editor of [...this._modelListeners.keys()]) {
+			this._untrackEditor(editor);
+		}
+		this._decorations.clear();
+		super.dispose();
+	}
 
 	private _setupFileDecorationsListener(): void {
 		const handler = ((event: CustomEvent) => {
 			const { uri, decorations } = event.detail as { uri: string; decorations: IFileDecorations };
-			const parsedUri = URI.parse(uri);
+			const key = fileKey(URI.parse(uri));
 
-			const activeControl = this.editorService.activeTextEditorControl;
-			if (activeControl && isCodeEditor(activeControl)) {
-				this._applyFileDecorations(activeControl, parsedUri, decorations);
+			if (decorations.viewZones.length === 0 && decorations.highlights.length === 0) {
+				this._decorations.delete(key);
+			} else {
+				this._decorations.set(key, decorations);
+			}
+
+			// Gaze can send a file that no editor shows, because it computes the decorations of a
+			// file that the user opened before. The record above holds them for that file.
+			for (const editor of this._modelListeners.keys()) {
+				if (this._fileKeyOf(editor) === key) {
+					this._applyFileDecorations(editor, decorations);
+				}
 			}
 		}) as EventListener;
 
@@ -66,34 +103,65 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 		this._register({ dispose: () => mainWindow.removeEventListener('membrane:setFileDecorations', handler) });
 	}
 
-	private _applyFileDecorations(editor: ICodeEditor, targetUri: URI, decorations: IFileDecorations): void {
-		const model = editor.getModel();
-		if (!model || model.uri.scheme !== targetUri.scheme || model.uri.path !== targetUri.path) {
+	/**
+	 * Apply the decorations of the file that `editor` shows, and apply them again for each model
+	 * that the editor takes.
+	 *
+	 * A tab switch keeps the editor and gives it another model. The editor builds a new view for
+	 * that model, and the new view holds no view zone, so the zones of every file need this. The
+	 * highlights sit on the model and survive the switch, and a model that the editor opens again
+	 * after a dispose needs them.
+	 */
+	private _trackEditor(editor: ICodeEditor): void {
+		if (this._modelListeners.has(editor)) {
 			return;
 		}
-
-		this._applyViewZones(editor, targetUri, decorations.viewZones);
-
-		this._applyHighlights(editor, targetUri, decorations.highlights);
+		this._modelListeners.set(editor, editor.onDidChangeModel(() => this._applyStoredDecorations(editor)));
+		this._applyStoredDecorations(editor);
 	}
 
-	private _applyViewZones(editor: ICodeEditor, targetUri: URI, zones: IMembraneViewZone[]): void {
+	private _untrackEditor(editor: ICodeEditor): void {
+		this._modelListeners.get(editor)?.dispose();
+		this._modelListeners.delete(editor);
+		this._zoneIds.delete(editor);
+	}
+
+	private _fileKeyOf(editor: ICodeEditor): string | undefined {
 		const model = editor.getModel();
-		if (!model || model.uri.scheme !== targetUri.scheme || model.uri.path !== targetUri.path) {
+		return model ? fileKey(model.uri) : undefined;
+	}
+
+	private _applyStoredDecorations(editor: ICodeEditor): void {
+		const key = this._fileKeyOf(editor);
+		const decorations = key ? this._decorations.get(key) : undefined;
+		this._applyFileDecorations(editor, decorations ?? EMPTY_DECORATIONS);
+	}
+
+	private _applyFileDecorations(editor: ICodeEditor, decorations: IFileDecorations): void {
+		if (!editor.getModel()) {
+			return;
+		}
+		// A diff editor shows its own added and deleted lines, so Gaze's inline diff does not belong
+		// in it.
+		if (editor.getOption(EditorOption.inDiffEditor)) {
 			return;
 		}
 
+		this._applyViewZones(editor, decorations.viewZones);
+		this._applyHighlights(editor, decorations.highlights);
+	}
+
+	private _applyViewZones(editor: ICodeEditor, zones: IMembraneViewZone[]): void {
 		const fontInfo = editor.getOption(EditorOption.fontInfo);
-		const editorWithDecorations = editor as IEditorWithMembraneDecorations;
-		const existingZoneIds: string[] = editorWithDecorations.__membraneViewZones || [];
+		const existingZoneIds = this._zoneIds.get(editor) ?? [];
 
 		editor.changeViewZones((zoneAccessor: IViewZoneChangeAccessor) => {
-			// Remove existing zones
+			// A model change already took the zones of the file that the editor showed before, and
+			// `removeZone` ignores an id that no zone holds.
 			for (const zoneId of existingZoneIds) {
 				zoneAccessor.removeZone(zoneId);
 			}
 
-			// Add new zones
 			const newZoneIds: string[] = [];
 			for (const zone of zones) {
 				const zoneId = zoneAccessor.addZone({
@@ -104,14 +172,13 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 				});
 				newZoneIds.push(zoneId);
 			}
-			editorWithDecorations.__membraneViewZones = newZoneIds;
+			this._zoneIds.set(editor, newZoneIds);
 		});
 	}
 
-
-	private _applyHighlights(editor: ICodeEditor, targetUri: URI, highlights: IMembraneHighlight[]): void {
+	private _applyHighlights(editor: ICodeEditor, highlights: IMembraneHighlight[]): void {
 		const model = editor.getModel();
-		if (!model || model.uri.scheme !== targetUri.scheme || model.uri.path !== targetUri.path) {
+		if (!model) {
 			return;
 		}
 
@@ -119,7 +186,6 @@ export class MembraneEditorDecorationsContribution extends Disposable implements
 		const existingDecorationIds: string[] = modelWithDecorations.__membraneHighlights || [];
 
 		const lineCount = model.getLineCount();
-
 
 		const newDecorations: IModelDeltaDecoration[] = highlights
 			.filter(h => h.startLine >= 1 && h.endLine <= lineCount && h.startLine <= h.endLine)
