@@ -152,6 +152,14 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 		'window.commandCenter': false, // Hide command center
 		'editor.scrollbar.verticalScrollbarSize': 6,
 		'editor.scrollbar.horizontalScrollbarSize': 6,
+		'vim.useSystemClipboard': true,
+		// High print width so Prettier does not wrap JSX or TSX lines.
+		'[javascriptreact]': {
+			'prettier.printWidth': 10000,
+		},
+		'[typescriptreact]': {
+			'prettier.printWidth': 10000,
+		},
 	};
 
 
