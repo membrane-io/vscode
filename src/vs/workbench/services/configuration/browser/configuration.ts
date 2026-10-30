@@ -927,6 +927,8 @@ class CachedFolderConfiguration {
 	private _standAloneConfigurations: ConfigurationModel[];
 	private configurationModel: ConfigurationModel;
 	private readonly key: ConfigurationKey;
+	/** The contents of the cache, as the last read or write left them. `undefined` if no cache exists. */
+	private cachedContents: string | undefined;
 
 	constructor(
 		folder: URI,
@@ -945,7 +947,8 @@ class CachedFolderConfiguration {
 	async loadConfiguration(): Promise<ConfigurationModel> {
 		try {
 			const contents = await this.configurationCache.read(this.key);
-			const { content: configurationContents }: { content: IStringDictionary<string> } = JSON.parse(contents.toString());
+			this.cachedContents = contents.toString();
+			const { content: configurationContents }: { content: IStringDictionary<string> } = JSON.parse(this.cachedContents);
 			if (configurationContents) {
 				for (const key of Object.keys(configurationContents)) {
 					if (key === FOLDER_SETTINGS_NAME) {
@@ -973,8 +976,15 @@ class CachedFolderConfiguration {
 				content[key] = contents;
 			}
 		});
-		if (Object.keys(content).length) {
-			await this.configurationCache.write(this.key, JSON.stringify({ content }));
+		// Membrane: each write fires a file change event, and each listener checks the event against each workspace folder.
+		// The IDE has one folder for each program, so the code writes only a cache whose contents changed.
+		const contents = Object.keys(content).length ? JSON.stringify({ content }) : undefined;
+		if (contents === this.cachedContents) {
+			return;
+		}
+		this.cachedContents = contents;
+		if (contents) {
+			await this.configurationCache.write(this.key, contents);
 		} else {
 			await this.configurationCache.remove(this.key);
 		}
