@@ -1,0 +1,114 @@
+{
+	"$schema": "vscode://schemas/color-theme",
+	"name": "Membrane Light Dim",
+	"include": "./membrane_light.json",
+	"tokenColors": [
+		{
+			"scope": "constant.numeric",
+			"settings": {
+				"foreground": "#335208"
+			}
+		},
+		{
+			"scope": "string.quoted.single, string.quoted.double, string.template, punctuation.definition.string.begin, punctuation.definition.string.end, string.regexp",
+			"settings": {
+				"foreground": "#7a4000"
+			}
+		},
+		{
+			"scope": "constant.character.escape, punctuation.definition.group.regexp, punctuation.definition.character-class.regexp",
+			"settings": {
+				"foreground": "#5c2e00"
+			}
+		},
+		{
+			"scope": "constant.language.boolean, constant.language.null, constant.language.undefined",
+			"settings": {
+				"foreground": "#335208"
+			}
+		},
+		{
+			"scope": "comment, punctuation.definition.comment",
+			"settings": {
+				"foreground": "#d4d4d4"
+			}
+		},
+		{
+			"scope": "keyword.control.export, keyword.control.import, keyword.control.switch, storage.type.interface",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "keyword.control.conditional, keyword.control.loop",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "keyword.operator",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "keyword.operator.new, keyword.control.flow, keyword.control.from, storage.type.function, keyword.control.as, keyword.operator.expression.typeof, keyword.operator.expression.in",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "storage.modifier.async",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "keyword.control.trycatch",
+			"settings": {
+				"foreground": "#8a1414"
+			}
+		},
+		{
+			"scope": "meta.object-literal.member",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "storage.type",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "storage.type.function.arrow",
+			"settings": {
+				"foreground": "#263248"
+			}
+		},
+		{
+			"scope": "punctuation.separator.key-value, punctuation.accessor, keyword.operator.type.annotation, punctuation.terminator.statement",
+			"settings": {
+				"foreground": "#444444"
+			}
+		},
+		{
+			"scope": "punctuation.definition.binding-pattern.array",
+			"settings": {
+				"foreground": "#444444"
+			}
+		},
+		{
+			"scope": "entity.name.tag, punctuation.definition.tag",
+			"settings": {
+				"foreground": "#263248"
+			}
+		}
+	],
+	"semanticTokenColors": {
+		"newOperator": "#263248",
+		"stringLiteral": "#7a4000",
+		"numberLiteral": "#335208"
+	}
+}

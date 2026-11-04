@@ -44,6 +44,12 @@
         "path": "./themes/membrane_light.json"
       },
       {
+        "id": "Membrane Light Dim",
+        "label": "%membraneLightDimThemeLabel%",
+        "uiTheme": "vs",
+        "path": "./themes/membrane_light_dim.json"
+      },
+      {
         "id": "Membrane Dark",
         "label": "%membraneDarkThemeLabel%",
         "uiTheme": "vs-dark",
