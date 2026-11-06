@@ -4,11 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { getDomNodePagePosition } from '../../../../base/browser/dom.js';
-import { IAnchor } from '../../../../base/browser/ui/contextview/contextview.js';
 import { createCancelablePromise } from '../../../../base/common/async.js';
 import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { DisposableStore, toDisposable } from '../../../../base/common/lifecycle.js';
-import { MembraneVscodeUiSessions, EditorAnchor, HoverActionPart, HoverPayload } from '../../../../base/browser/membrane/membraneVscodeUi.js';
+import { MembraneVscodeUiSessions, EditorHoverAnchor, HoverActionPart, HoverPayload } from '../../../../base/browser/membrane/membraneVscodeUi.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { ContentWidgetPositionPreference, ICodeEditor } from '../../../browser/editorBrowser.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
@@ -124,7 +123,7 @@ const markerCodeActionTrigger: CodeActionTrigger = {
 
 interface HoverSessionState {
 	editor: ICodeEditor;
-	anchor: EditorAnchor;
+	anchor: EditorHoverAnchor;
 	payload: HoverPayload;
 	marker?: IMarker;
 	actionsSet?: CodeActionSet;
@@ -149,23 +148,33 @@ export function bridgeContentHover(editor: ICodeEditor, hoverResult: ContentHove
 	}
 
 	const model = editor.getModel();
-	if (!model) {
+	const domNode = editor.getDomNode();
+	if (!model || !domNode) {
 		return false;
 	}
 
 	const anchorRange = hoverResult.options.anchor.range;
+	const coords = editor.getScrolledVisiblePosition(anchorRange.getStartPosition());
+	if (!coords) {
+		return false;
+	}
+	const editorCoords = getDomNodePagePosition(domNode);
 	const markerHover = hoverResult.hoverParts.find((part): part is MarkerHover => part instanceof MarkerHover);
 	const payload = serializeHoverParts(hoverResult.hoverParts, markerHover, editor);
 	const hoverId = activeHoverId ?? generateUuid();
 	activeHoverId = hoverId;
 	clearBridgedHoverLayout();
 
-	const editorAnchor: EditorAnchor = {
+	const editorAnchor: EditorHoverAnchor = {
 		type: 'editor',
 		uri: model.uri.toString(),
 		line: anchorRange.startLineNumber,
 		column: anchorRange.startColumn,
 		preference: preference === ContentWidgetPositionPreference.BELOW ? 'below' : 'above',
+		// The left of `coords` includes the glyph margin, the line numbers and the decorations.
+		x: editorCoords.left + coords.left,
+		y: editorCoords.top + coords.top,
+		lineHeight: coords.height,
 	};
 
 	// Dispose any state from a previous show with the same reused hover id.
@@ -257,8 +266,7 @@ function handleHoverAction(hoverId: string, itemId: string): void {
 		session.actionsSet = undefined;
 		const controller = CodeActionController.get(editor);
 		if (controller) {
-			const screenAnchor = editorAnchorToScreen(editor, anchor);
-			controller.showCodeActions(markerCodeActionTrigger, actionsSet, screenAnchor);
+			controller.showCodeActions(markerCodeActionTrigger, actionsSet, { x: anchor.x, y: anchor.y + anchor.lineHeight });
 			if (session.marker) {
 				loadQuickFixActions(hoverId, session.marker);
 			}
@@ -354,22 +362,6 @@ function sendHoverUpdate(hoverId: string, patch: Partial<HoverPayload>): void {
 		anchor: session.anchor,
 		payload: session.payload,
 	});
-}
-
-function editorAnchorToScreen(editor: ICodeEditor, anchor: EditorAnchor): IAnchor {
-	const position = { lineNumber: anchor.line, column: anchor.column };
-	const coords = editor.getScrolledVisiblePosition(position);
-	const domNode = editor.getDomNode();
-	if (!coords || !domNode) {
-		return { x: 0, y: 0 };
-	}
-	const editorCoords = getDomNodePagePosition(domNode);
-	const layout = editor.getLayoutInfo();
-	const lineHeight = editor.getOption(EditorOption.lineHeight);
-	return {
-		x: editorCoords.left + layout.contentLeft + coords.left,
-		y: editorCoords.top + coords.top + lineHeight,
-	};
 }
 
 function serializeHoverParts(hoverParts: readonly IHoverPart[], markerHover: MarkerHover | undefined, editor: ICodeEditor): HoverPayload {
