@@ -31,6 +31,17 @@ export interface EditorAnchor {
 	preference?: 'above' | 'below';
 }
 
+/**
+ * The anchor of a content hover. `x` and `y` are the page position of the start of the anchor
+ * range, and `lineHeight` is the height of its line. The hover computes them when it shows,
+ * because the editor hides a content hover when it scrolls.
+ */
+export interface EditorHoverAnchor extends EditorAnchor {
+	x: number;
+	y: number;
+	lineHeight: number;
+}
+
 export type VscodeUiAnchor = ScreenAnchor | EditorAnchor;
 
 export interface MenuPayload {
