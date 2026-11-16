@@ -28,7 +28,7 @@ export class IndexedDB {
 
 	static async create(name: string, version: number | undefined, stores: string[]): Promise<IndexedDB> {
 		const database = await IndexedDB.openDatabase(name, version, stores);
-		return new IndexedDB(database, name);
+		return new IndexedDB(database, name, version, stores);
 	}
 
 	private static async openDatabase(name: string, version: number | undefined, stores: string[]): Promise<IDBDatabase> {
@@ -99,9 +99,10 @@ export class IndexedDB {
 	}
 
 	private database: IDBDatabase | null = null;
+	private reopening: Promise<IDBDatabase> | undefined;
 	private readonly pendingTransactions: IDBTransaction[] = [];
 
-	constructor(database: IDBDatabase, private readonly name: string) {
+	constructor(database: IDBDatabase, private readonly name: string, private readonly version: number | undefined, private readonly stores: string[]) {
 		this.database = database;
 	}
 
@@ -117,13 +118,36 @@ export class IndexedDB {
 		this.database = null;
 	}
 
-	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>[]): Promise<T[]>;
-	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T>;
-	async runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T> | IDBRequest<T>[]): Promise<T | T[]> {
+	// MEMBRANE
+	// The browser can close the connection by itself, for example when it clears the site data. Then `transaction`
+	// throws an InvalidStateError ("The database connection is closing"). This function opens a new connection one
+	// time and starts the transaction on it. After `close()`, it throws a DBClosedError.
+	private async transaction(store: string, transactionMode: IDBTransactionMode): Promise<IDBTransaction> {
 		if (!this.database) {
 			throw new DBClosedError(this.name);
 		}
-		const transaction = this.database.transaction(store, transactionMode);
+		try {
+			return this.database.transaction(store, transactionMode);
+		} catch (error) {
+			if (!(error instanceof DOMException && error.name === 'InvalidStateError')) {
+				throw error;
+			}
+			console.warn(`The browser closed the IndexedDB connection '${this.name}'. Opening a new connection.`);
+			this.reopening ??= IndexedDB.openDatabase(this.name, this.version, this.stores).finally(() => this.reopening = undefined);
+			const database = await this.reopening;
+			if (!this.database) {
+				database.close();
+				throw new DBClosedError(this.name);
+			}
+			this.database = database;
+			return database.transaction(store, transactionMode);
+		}
+	}
+
+	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>[]): Promise<T[]>;
+	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T>;
+	async runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T> | IDBRequest<T>[]): Promise<T | T[]> {
+		const transaction = await this.transaction(store, transactionMode);
 		this.pendingTransactions.push(transaction);
 		// MEMBRANE
 		// Proxy to save indexeddb reqs
@@ -187,10 +211,7 @@ export class IndexedDB {
 	}
 
 	async getKeyValues<V>(store: string, isValid: (value: unknown) => value is V): Promise<Map<string, V>> {
-		if (!this.database) {
-			throw new DBClosedError(this.name);
-		}
-		const transaction = this.database.transaction(store, 'readonly');
+		const transaction = await this.transaction(store, 'readonly');
 		this.pendingTransactions.push(transaction);
 		return new Promise<Map<string, V>>(resolve => {
 			const items = new Map<string, V>();
